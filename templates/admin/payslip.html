@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% set title = "Fiche de paie" %}
+{% block content %}
+  <div class="row-between">
+    <div>
+      <h1>Fiche de paie</h1>
+      <p class="muted">Agent : <strong>{{ target.full_name }}</strong> (@{{ target.username }}) • Zone : <strong>{{ zone_name }}</strong> • Paiement : <strong>{{ rec.payment_number or rec.id }}</strong></p>
+    </div>
+    <div class="actions">
+      <a class="btn secondary" href="{{ url_for('admin_payroll_user', user_id=target.id) }}">← Périodes</a>
+      <a class="btn" href="{{ url_for('admin_payslip_pdf', pay_id=rec.id) }}">Télécharger PDF</a>
+      <button class="btn secondary" type="button" onclick="window.print()">Imprimer</button>
+    </div>
+  </div>
+
+  <div class="card payslip">
+    <div class="grid-2">
+      <div>
+        <div class="muted small">Période</div>
+        <div class="big">{{ period_label }}</div>
+      </div>
+      <div>
+        <div class="muted small">Statut</div>
+        <div>
+          {% if rec.status == "PAID" %}
+            <span class="badge ok">Payé</span>
+          {% else %}
+            <span class="badge warn">Non payé</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <hr class="line">
+
+    {% if rec.type in ['PAYSLIP', 'PAYSLIP_SUPP'] %}
+      <div class="grid-3">
+        <div class="kpi">
+          <div class="kpi-label">Personnes recensées</div>
+          <div class="kpi-value">{{ rec.count }}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Montant brut</div>
+          <div class="kpi-value">{{ gross_fmt }}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Net à payer</div>
+          <div class="kpi-value">{{ balance_fmt }}</div>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:14px;">
+        <table class="table">
+          <tbody>
+            <tr>
+              <td>Tarif</td>
+              <td style="text-align:right;" class="mono">{{ rate }} F CFA</td>
+            </tr>
+            <tr>
+              <td>Montant de base</td>
+              <td style="text-align:right;"><strong>{{ base_fmt }}</strong></td>
+            </tr>
+            <tr>
+              <td>Prime fixe</td>
+              <td style="text-align:right;"><strong>{{ bonus_fmt }}</strong></td>
+            </tr>
+            <tr>
+              <td>Montant brut</td>
+              <td style="text-align:right;"><strong>{{ gross_fmt }}</strong></td>
+            </tr>
+            <tr>
+              <td>Avance(s)</td>
+              <td style="text-align:right;">- {{ advance_fmt }}</td>
+            </tr>
+            <tr>
+              <td><strong>Net à payer</strong></td>
+              <td style="text-align:right;"><strong>{{ balance_fmt }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="grid-3">
+        <div class="kpi">
+          <div class="kpi-label">Type</div>
+          <div class="kpi-value">Avance</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Montant</div>
+          <div class="kpi-value">{{ amount_fmt }}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Statut</div>
+          <div class="kpi-value">{{ rec.status }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+
+    <div class="summary">
+      <div><span class="label">Générée le</span> {{ rec.generated_at }}</div>
+      <div><span class="label">Générée par</span> {{ rec.generated_by }}</div>
+      <div><span class="label">Payée le</span> {{ rec.paid_at if rec.paid_at else "—" }}</div>
+    </div>
+
+    <div class="row-between no-print">
+      <div class="muted small">Astuce : utilise “Imprimer / PDF” pour produire une fiche propre en PDF.</div>
+      <div class="actions">
+        {% if rec.status == "PAID" %}
+          <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="mark_unpaid">
+            <button class="btn secondary" type="submit">Remettre en non-payé</button>
+          </form>
+        {% else %}
+          <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="mark_paid">
+            <button class="btn" type="submit">Marquer payé</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

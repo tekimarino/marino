@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% set title = "Audit" %}
+{% block content %}
+  <h1>Journal d’audit</h1>
+  <p class="muted">Traçabilité : créations, validations, paie, SMS, sauvegardes, etc.</p>
+
+  <div class="card">
+    <form class="form" method="get">
+      <div class="grid2">
+        <div>
+          <label>Recherche</label>
+          <input name="q" value="{{ request.args.get('q','') }}" placeholder="ex: registration.verify, BV03, ...">
+        </div>
+        <div>
+          <label>Action exacte (optionnel)</label>
+          <input name="action" value="{{ request.args.get('action','') }}" placeholder="ex: registration.create">
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>Actor ID (optionnel)</label>
+          <input name="actor" value="{{ request.args.get('actor','') }}" placeholder="UUID utilisateur">
+        </div>
+        <div style="display:flex; align-items:flex-end; gap:10px;">
+          <button class="btn primary" type="submit">Filtrer</button>
+          <a class="btn" href="{{ url_for('admin_audit') }}">Réinitialiser</a>
+        </div>
+      </div>
+    </form>
+
+    <hr class="sep">
+
+    {% if events %}
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th style="width:170px;">Date</th>
+              <th>Action</th>
+              <th>Acteur</th>
+              <th>Cible</th>
+              <th>Détails</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in events %}
+              {% set u = find_user(e.actor_id) %}
+              <tr>
+                <td class="mono">{{ (e.at[:19].replace('T',' ') if e.at else '—') }}</td>
+                <td><span class="badge">{{ e.action }}</span></td>
+                <td>
+                  {% if u %}
+                    <strong>{{ u.full_name }}</strong>
+                    <div class="muted small">@{{ u.username }} • {{ u.role }}</div>
+                  {% else %}
+                    <span class="muted">{{ e.actor_id }}</span>
+                  {% endif %}
+                </td>
+                <td class="mono">{{ e.target_type }}:{{ e.target_id }}</td>
+                <td class="muted small" style="max-width:520px; white-space:pre-wrap;">{{ e.details | prettyjson }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        {% if pagination.has_prev %}
+          <a class="btn" href="{{ url_for('admin_audit', page=pagination.page-1, q=request.args.get('q',''), action=request.args.get('action',''), actor=request.args.get('actor','')) }}">‹ Préc</a>
+        {% endif %}
+        <span class="muted">Page {{ pagination.page }} / {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+          <a class="btn" href="{{ url_for('admin_audit', page=pagination.page+1, q=request.args.get('q',''), action=request.args.get('action',''), actor=request.args.get('actor','')) }}">Suiv ›</a>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="hint">Aucun événement.</div>
+    {% endif %}
+  </div>
+{% endblock %}

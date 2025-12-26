@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% set title = "Personnes recensées" %}
+{% block content %}
+  <h1>Personnes recensées</h1>
+
+  <div class="card">
+    <form method="get" class="form">
+      <div class="grid2">
+        <div>
+          <label>Zone</label>
+          <select name="zone_id">
+            <option value="">Toutes</option>
+            {% for z in zones %}
+              <option value="{{ z.id }}" {% if selected_zone_id == z.id %}selected{% endif %}>{{ z.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Centre de vote</label>
+          <select name="polling_center">
+            <option value="">Tous</option>
+            {% for c in centers %}
+              <option value="{{ c }}" {% if selected_center == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Statut</label>
+          <select name="status">
+            <option value="">Tous</option>
+            {% for s in statuses %}
+              <option value="{{ s }}" {% if selected_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Recherche (nom, téléphone, n° électeur, BV...)</label>
+          <input name="q" value="{{ q }}" placeholder="ex. Kouamé / +22507 / BV03">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Filtrer</button>
+        <a class="btn" href="{{ url_for('admin_registrations_pdf', zone_id=selected_zone_id, polling_center=selected_center, q=q, status=selected_status) }}">Exporter PDF</a>
+        <a class="btn" href="{{ url_for('admin_registrations') }}">Réinitialiser</a>
+      </div>
+
+      <p class="muted">Résultats: <strong>{{ total }}</strong> • Page <strong>{{ pagination.page }}</strong>/<strong>{{ pagination.pages }}</strong></p>
+    </form>
+  </div>
+
+  <div class="card">
+    {% if regs %}
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Électeur</th>
+              <th>Naissance</th>
+              <th>Zone</th>
+              <th>Quartier</th>
+              <th>Téléphone</th>
+              <th>N° électeur</th>
+              <th>Centre / Bureau</th>
+              <th>Statut</th>
+              <th>Fiabilité</th>
+              <th>Agent</th>
+              <th>Superviseur</th>
+              <th style="width:120px;">Historique</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in regs %}
+              <tr>
+                <td>
+                  <span class="lastname">{{ (r.nom or '')|upper }}</span>
+                  <span class="firstname">{{ r.prenoms }}</span>
+                  {% if r.photos and r.photos|length > 0 %}
+                    <span class="badge" title="Pièce jointe">📎 {{ r.photos|length }}</span>
+                  {% endif %}
+                </td>
+                <td class="mono">{{ format_date(r.dob) }}</td>
+                <td class="muted">{{ zone_name(r.zone_id) }}</td>
+                <td>{{ r.quartier }}</td>
+                <td>{{ r.telephone if r.telephone else '—' }}</td>
+                <td class="mono">{{ r.voter_number if r.voter_number else '—' }}</td>
+                <td>{{ r.polling_center if r.polling_center else '—' }} / {{ r.polling_station if r.polling_station else '—' }}</td>
+                <td><span class="badge">{{ r.status }}</span></td>
+                <td>
+                  {% set sc = (r.reliability_score or 0) %}
+                  {% set miss = (r.reliability_missing or []) %}
+                  {% if sc >= 80 %}
+                    <span class="badge ok" title="OK{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                  {% elif sc >= 50 %}
+                    <span class="badge warn" title="À améliorer{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                  {% else %}
+                    <span class="badge danger" title="Faible{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                  {% endif %}
+                </td>
+                <td class="muted">{{ find_user(r.created_by).full_name if find_user(r.created_by) else '—' }}</td>
+                <td class="muted">{{ find_user(r.verified_by).full_name if (r.verified_by and find_user(r.verified_by)) else '—' }}</td>
+                <td><a class="btn secondary" href="{{ url_for('admin_registration_history', reg_id=r.id) }}">Historique</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        {% if pagination.has_prev %}
+          <a class="btn" href="{{ url_for('admin_registrations', page=pagination.page-1, zone_id=selected_zone_id, polling_center=selected_center, q=q, status=selected_status) }}">‹ Préc</a>
+        {% endif %}
+        <span class="muted">Page {{ pagination.page }} / {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+          <a class="btn" href="{{ url_for('admin_registrations', page=pagination.page+1, zone_id=selected_zone_id, polling_center=selected_center, q=q, status=selected_status) }}">Suiv ›</a>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="hint">Aucun enregistrement.</div>
+    {% endif %}
+  </div>
+{% endblock %}

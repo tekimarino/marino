@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% set title = "Nouvel électeur" %}
+{% block content %}
+  <h1>Nouvel électeur</h1>
+  <p class="muted">Saisie agent • Tous les champs sont obligatoires. Tu peux aussi enregistrer en <strong>brouillon</strong> si besoin.</p>
+
+  <div class="card narrow">
+    <form class="form" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="grid2">
+        <div>
+          <label>Nom</label>
+          <input id="nom" name="nom" required value="{{ (form.nom if form else '') }}" placeholder="Ex: KOUASSI">
+        </div>
+        <div>
+          <label>Prénoms</label>
+          <input id="prenoms" name="prenoms" required value="{{ (form.prenoms if form else '') }}" placeholder="Ex: Awa Marie">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Date de naissance</label>
+          <input id="dob" type="date" name="dob" required value="{{ (form.dob if form else '') }}">
+        </div>
+        <div>
+          <label>Téléphone</label>
+          <input id="telephone" name="telephone" required value="{{ (form.telephone if form else '') }}" placeholder="Ex: 0700000000">
+        </div>
+      </div>
+
+      <label>Quartier</label>
+      <input name="quartier" required value="{{ (form.quartier if form else '') }}" placeholder="Ex: Résidentiel">
+
+      <label>Photo (optionnel)</label>
+      <input type="file" name="photo" accept="image/*,application/pdf">
+      <div class="hint">Optionnel : photo de justificatif. Formats acceptés : jpg/png/pdf (max 5 Mo).</div>
+
+      <div id="dupBox" class="hint" style="display:none;"></div>
+
+      {% if duplicates %}
+        <div class="hint" style="border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08);">
+          <strong>Doublon probable :</strong> un enregistrement similaire existe déjà.
+          <div class="table-wrap" style="margin-top:10px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Nom & prénoms</th>
+                  <th>Né(e)</th>
+                  <th>Téléphone</th>
+                  <th>Zone</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for d in duplicates %}
+                <tr>
+                  <td><span class="lastname">{{ (d.nom or '')|upper }}</span> <span class="firstname">{{ d.prenoms }}</span></td>
+                  <td>{{ d.dob }}</td>
+                  <td>{{ d.telephone }}</td>
+                  <td>{{ d.zone_id }}</td>
+                  <td><span class="badge warn">{{ d.status }}</span></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <label style="margin-top:10px; display:flex; align-items:center; gap:10px; font-weight:700;">
+            <input type="checkbox" name="confirm_duplicate" value="yes">
+            Je confirme que cet électeur doit être enregistré quand même.
+          </label>
+        </div>
+      {% else %}
+        <label style="display:flex; align-items:center; gap:10px; font-weight:700;">
+          <input type="checkbox" id="confirm_duplicate" name="confirm_duplicate" value="yes" style="display:none;">
+          <span id="confirmText" style="display:none;">Je confirme que c’est volontaire (doublon possible)</span>
+        </label>
+      {% endif %}
+
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn secondary" name="action" value="draft" type="submit">Enregistrer en brouillon</button>
+        <button class="btn primary" name="action" value="save" type="submit">Enregistrer & envoyer</button>
+        <a class="btn" href="{{ url_for('agent_dashboard') }}">Annuler</a>
+      </div>
+
+      <div class="hint">Astuce « terrain » : en réseau instable, enregistre en <strong>brouillon</strong>, puis complète et envoie quand tu retrouves une bonne connexion.</div>
+    </form>
+  </div>
+
+  <script>
+    // Détection simple de doublons (appel serveur). Ne bloque pas, mais prévient.
+    const nom = document.getElementById('nom');
+    const prenoms = document.getElementById('prenoms');
+    const dob = document.getElementById('dob');
+    const tel = document.getElementById('telephone');
+    const box = document.getElementById('dupBox');
+    const confirmCb = document.getElementById('confirm_duplicate');
+    const confirmText = document.getElementById('confirmText');
+
+    async function checkDup(){
+      if(!nom.value || !prenoms.value || !dob.value || !tel.value){
+        box.style.display='none';
+        confirmCb.style.display='none';
+        confirmText.style.display='none';
+        return;
+      }
+      const params = new URLSearchParams({nom: nom.value, prenoms: prenoms.value, dob: dob.value, telephone: tel.value});
+      try{
+        const r = await fetch('{{ url_for("agent_check_duplicates") }}?' + params.toString(), {headers: {'X-Requested-With':'fetch'}});
+        const j = await r.json();
+        if(j && j.count && j.count > 0){
+          box.style.display='block';
+          box.style.borderColor='rgba(245,158,11,.35)';
+          box.style.background='rgba(245,158,11,.08)';
+          box.innerHTML = '<strong>Attention :</strong> ' + j.count + ' doublon(s) possible(s). Coche la confirmation si tu veux enregistrer quand même.';
+          confirmCb.style.display='inline-block';
+          confirmText.style.display='inline-block';
+        } else {
+          box.style.display='none';
+          confirmCb.style.display='none';
+          confirmText.style.display='none';
+        }
+      }catch(e){
+        // silencieux
+      }
+    }
+
+    [nom, prenoms, dob, tel].forEach(el => {
+      el.addEventListener('change', checkDup);
+      el.addEventListener('blur', checkDup);
+    });
+  </script>
+{% endblock %}

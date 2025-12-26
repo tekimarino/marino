@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% set title = "Paie" %}
+{% block content %}
+  <div class="row-between">
+    <div>
+      <h1>Paie — {{ target.full_name }}</h1>
+      <p class="muted">@{{ target.username }} • Zone : <strong>{{ zone_name }}</strong></p>
+    </div>
+    <div class="actions">
+      <a class="btn secondary" href="{{ url_for('admin_payroll') }}">← Retour</a>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Périodes (14 jours)</h2>
+      <p class="muted">La fiche est <strong>verrouillée</strong> à la génération pour garantir la stabilité des montants.</p>
+
+      <div class="tabs">
+        <a class="tab {% if tab == 'upcoming' %}active{% endif %}" href="{{ url_for('admin_payroll_user', user_id=target.id, tab='upcoming') }}">
+          Paiements à effectuer <span class="tab-meta">{{ upcoming_total|int | format_cfa }}</span>
+        </a>
+        <a class="tab {% if tab == 'paid' %}active{% endif %}" href="{{ url_for('admin_payroll_user', user_id=target.id, tab='paid') }}">
+          Paiements effectués <span class="tab-meta">{{ paid_total|int | format_cfa }}</span>
+        </a>
+      </div>
+
+      {% if tab == 'paid' %}
+        {% if paid_rows %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Paiement</th>
+                  <th>Personnes</th>
+                  <th>Montant</th>
+                  <th>Payé le</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in paid_rows %}
+                  <tr>
+                    <td><strong>{{ r.label }}</strong></td>
+                    <td>{{ r.count }}</td>
+                    <td><strong>{{ r.amount|int | format_cfa }}</strong></td>
+                    <td class="mono">{{ r.paid_at[:19].replace('T',' ') if r.paid_at else "—" }}</td>
+                    <td style="text-align:right; white-space:nowrap;">
+                      <a class="btn" href="{{ url_for('admin_payslip', pay_id=r.id) }}">Ouvrir</a>
+                      <a class="btn secondary" href="{{ url_for('admin_payslip_pdf', pay_id=r.id) }}">PDF</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="hint">Aucun paiement n’a encore été marqué comme effectué.</div>
+        {% endif %}
+
+      {% else %}
+        <p class="muted">Total estimé (non payé) : <strong>{{ upcoming_total|int | format_cfa }}</strong></p>
+
+        {% if upcoming_rows %}
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Période</th>
+                <th>Personnes</th>
+                <th>Brut</th>
+                <th>Avances</th>
+                <th>Net à payer</th>
+                <th>Statut</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in upcoming_rows %}
+                <tr>
+                  <td><strong>{{ r.label }}</strong></td>
+                  <td>
+                    {{ r.count }}
+                    {% if r.due_now_count is not none and r.due_now_count|int > 0 and r.due_now_count|int != r.count|int %}
+                      <div class="muted small">reste : {{ r.due_now_count }}</div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div><strong>{{ r.gross|int | format_cfa }}</strong></div>
+                    <div class="muted small">base : {{ r.base_amount|int | format_cfa }} • prime : {{ r.fixed_bonus|int | format_cfa }}</div>
+                  </td>
+                  <td>{{ r.advance|int | format_cfa }}</td>
+                  <td><strong>{{ r.due_now|int | format_cfa }}</strong></td>
+                  <td>
+                    {% if r.status == "PAID" %}
+                      <span class="badge ok">Payé</span>
+                    {% elif r.status == "GENERATED" %}
+                      <span class="badge warn">Généré</span>
+                    {% elif r.status == "PARTIAL" %}
+                      <span class="badge warn">À compléter</span>
+                    {% else %}
+                      <span class="badge">—</span>
+                    {% endif %}
+                  </td>
+                  <td style="text-align:right; white-space:nowrap;">
+                    {% if r.payslip %}
+                      <a class="btn" href="{{ url_for('admin_payslip', pay_id=r.payslip.id) }}">Ouvrir</a>
+                      {% if r.remainder_due and r.remainder_due|int > 0 %}
+                        <form method="post" style="display:inline; margin-left:6px;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                          <input type="hidden" name="action" value="generate_supplement">
+                          <input type="hidden" name="period_start" value="{{ r.start_iso }}">
+                          <input type="hidden" name="period_end" value="{{ r.end_iso }}">
+                          <button class="btn" type="submit">{% if r.remainder_count|int > 0 %}Complément ({{ r.remainder_count }} / {{ r.remainder_due|int | format_cfa }}){% else %}Complément ({{ r.remainder_due|int | format_cfa }}){% endif %}</button>
+                        </form>
+                      {% endif %}
+                    {% else %}
+                      <form method="post" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="generate">
+                        <input type="hidden" name="period_start" value="{{ r.start_iso }}">
+                        <input type="hidden" name="period_end" value="{{ r.end_iso }}">
+                        <button class="btn" type="submit">Générer</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="hint">Aucune saisie trouvée (donc rien à payer pour l’instant).</div>
+        {% endif %}
+      {% endif %}
+
+    </div>
+    <div class="card">
+      <h2>Avances</h2>
+      <p class="muted">Enregistrer une avance payée à l’agent (déduite du net de la période).</p>
+
+      <form class="form" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="add_advance">
+
+        <div class="grid2">
+          <div>
+            <label>Période début (ISO)</label>
+            <input name="period_start" placeholder="YYYY-MM-DD" required>
+          </div>
+          <div>
+            <label>Période fin (ISO)</label>
+            <input name="period_end" placeholder="YYYY-MM-DD" required>
+          </div>
+        </div>
+
+        <label>Montant (F CFA)</label>
+        <input type="number" name="advance_amount" min="1" required>
+
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn primary" type="submit">Enregistrer l’avance</button>
+        </div>
+        <div class="hint">Astuce : utilise les mêmes dates que la période concernée (les deux dates visibles dans la table).</div>
+      </form>
+
+      <hr class="sep">
+
+      {% if advances %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>N°</th><th>Montant</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for a in advances %}
+                <tr>
+                  <td class="mono">{{ a.payment_number }}</td>
+                  <td>{{ a.amount|int | format_cfa }}</td>
+                  <td class="mono">{{ a.created_at[:19].replace('T',' ') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="hint">Aucune avance.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

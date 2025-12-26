@@ -1,0 +1,723 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    #pilotageMap { height: 420px; border-radius: 18px; }
+    .map-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .map-legend { font-size:12px; }
+  </style>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+  .map-msg{
+    margin: 10px 0 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 245, 200, .9);
+    color: #5a4b00;
+    font-size: 13px;
+  }
+  /* Simple modal */
+  #coordsModal{
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.45);
+    z-index: 10000;
+    padding: 18px;
+  }
+  #coordsModal.open{ display: flex; }
+  .coords-card{
+    width: min(720px, 100%);
+    background: #fff;
+    border-radius: 18px;
+    padding: 18px 18px 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .coords-row{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .coords-row .field{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .coords-row label{
+    font-size: 12px;
+    color: #444;
+    font-weight: 700;
+  }
+  .coords-row input, .coords-row select{
+    height: 40px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid #d6d6d6;
+    outline: none;
+  }
+  .coords-actions{
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 14px;
+  }
+  .coords-help{
+    margin-top: 8px;
+    font-size: 12px;
+    color: #555;
+  }
+  .coords-top{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .coords-top h3{
+    margin:0;
+    font-size: 16px;
+    font-weight: 900;
+  }
+  .link-muted{
+    color:#4a4a4a;
+    font-size:12px;
+    text-decoration: underline;
+  }
+</style>
+<script>
+(function(){
+  const CSRF_TOKEN = "{{ csrf_token() }}";
+
+  function $(id){ return document.getElementById(id); }
+
+  function showMsg(msg){
+    const el = $('mapMsg');
+    if(!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    // 1) Map init: always set a default view immediately (so the map is never “grey” if /map_data fails).
+    const map = L.map('pilotageMap', { scrollWheelZoom: true }).setView([5.35, -4.02], 11);
+
+    // 2) Tiles with fallback providers (some networks block OSM; we swap automatically).
+    const providers = [
+      {
+        name: 'OSM',
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        opts: { maxZoom: 19, attribution: '&copy; OpenStreetMap' }
+      },
+      {
+        name: 'OSM HOT',
+        url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+        opts: { maxZoom: 19, attribution: '&copy; OpenStreetMap, HOT' }
+      },
+      {
+        name: 'CARTO',
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        opts: { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap, &copy; CARTO' }
+      }
+    ];
+
+    let tileLayer = null;
+    let providerIdx = 0;
+    let tileErrors = 0;
+
+    function setProvider(i){
+      providerIdx = i % providers.length;
+      tileErrors = 0;
+      if(tileLayer){ tileLayer.remove(); }
+      const p = providers[providerIdx];
+      tileLayer = L.tileLayer(p.url, p.opts).addTo(map);
+      tileLayer.on('tileerror', () => {
+        tileErrors += 1;
+        // After a few failures, try the next provider.
+        if(tileErrors >= 4){
+          const next = (providerIdx + 1) % providers.length;
+          if(next !== providerIdx){
+            showMsg("La carte semble bloquée par le réseau (tuiles). Changement automatique de fournisseur…");
+            setProvider(next);
+          }else{
+            showMsg("Impossible de charger la carte. Vérifie ta connexion Internet.");
+          }
+        }
+      });
+    }
+    setProvider(0);
+
+    // 3) Markers
+    const layer = L.layerGroup().addTo(map);
+    let lastCenters = [];
+    let lastZones = [];
+    let centersForZone = [];
+
+    function clearMarkers(){ layer.clearLayers(); }
+
+    function addCenterMarker(c){
+      if(c.lat == null || c.lng == null) return;
+      const m = L.marker([c.lat, c.lng]).addTo(layer);
+      const pct = c.progress_pct ?? 0;
+      const appr = c.approved_count ?? 0;
+      const tot = c.total_count ?? 0;
+      const content = `
+        <div style="min-width:240px">
+          <div style="font-weight:800;font-size:14px;margin-bottom:6px">${c.center_name || 'Centre'}</div>
+          <div style="font-size:12px;color:#444;margin-bottom:8px">${c.zone_name || ''}${c.office_name ? ' • ' + c.office_name : ''}</div>
+          <div style="font-size:12px;line-height:1.4">
+            Total : <b>${tot}</b><br>
+            Approuvés : <b>${appr}</b><br>
+            Progression : <b>${pct}%</b>
+          </div>
+          <div style="font-size:11px;color:#666;margin-top:8px">
+            Lat/Lng : ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}
+          </div>
+        </div>`;
+      m.bindPopup(content);
+    }
+
+    function fitToMarkers(centers){
+      const pts = centers.filter(c => c.lat != null && c.lng != null);
+      if(pts.length === 0){
+        // Keep default view, but help the user.
+        showMsg("Aucun centre n’a encore de coordonnées. Clique sur “Renseigner lat/lng” pour les placer sur la carte.");
+        return;
+      }
+      showMsg("");
+      const bounds = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
+      map.fitBounds(bounds.pad(0.15));
+    }
+
+    async function loadMap(){
+      try{
+        const zoneId = $('mapZone').value;
+        const res = await fetch(`{{ url_for('admin_pilotage_map_data') }}?zone=${encodeURIComponent(zoneId)}`, { credentials: 'same-origin' });
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+
+        lastCenters = data.centers || [];
+        lastZones = data.zones || [];
+        clearMarkers();
+        lastCenters.forEach(addCenterMarker);
+        fitToMarkers(lastCenters);
+      }catch(err){
+        console.error(err);
+        showMsg("La carte est chargée, mais les données (centres) ne répondent pas. Rafraîchis la page ou vérifie /admin/pilotage/map_data.");
+        // Keep default view; tiles will still show.
+      }finally{
+        // If the map is inside a card, sometimes sizing needs a nudge.
+        setTimeout(() => { map.invalidateSize(); }, 150);
+      }
+    }
+
+    $('mapZone').addEventListener('change', loadMap);
+    await loadMap();
+
+    // 4) Lat/Lng assignment (from the map)
+    const modal = $('coordsModal');
+    const openBtn = $('btnCoords');
+    const closeBtn = $('btnCoordsClose');
+    const saveBtn = $('btnCoordsSave');
+
+    function openModal(){
+      // Preselect same zone as the map
+      $('coordZone').value = $('mapZone').value;
+      populateCenters();
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+    function closeModal(){
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function renderCenterOptions(list, keepSelection=true){
+      const sel = $('coordCenter');
+      const current = (keepSelection && sel) ? (sel.value || '') : '';
+      if(!sel) return;
+
+      sel.innerHTML = '';
+
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = '— Choisir un centre —';
+      sel.appendChild(opt0);
+
+      (list || []).forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.center_id || (c.center_name || '') || '';
+        opt.textContent = c.center_name || c.center_id || 'Centre';
+        opt.dataset.centerName = c.center_name || '';
+        opt.dataset.lat = c.lat == null ? '' : String(c.lat);
+        opt.dataset.lng = c.lng == null ? '' : String(c.lng);
+        sel.appendChild(opt);
+      });
+
+      if(current && Array.from(sel.options).some(o => o.value === current)){
+        sel.value = current;
+      }else{
+        sel.value = '';
+      }
+    }
+
+    async function populateCenters(){
+      const zid = $('coordZone').value;
+
+      // Update link to admin centers page
+      const lnk = $('coordsGoCenters');
+      if(lnk){
+        lnk.href = `{{ url_for('admin_centers') }}?zone=${encodeURIComponent(zid)}`;
+      }
+
+      const search = $('coordCenterSearch');
+      if(search) search.value = '';
+
+      // Reset UI
+      const sel = $('coordCenter');
+      sel.innerHTML = '<option value="">— Chargement… —</option>';
+      sel.disabled = true;
+      centersForZone = [];
+
+      if(!zid){
+        sel.innerHTML = '<option value="">— Choisir un centre —</option>';
+        sel.disabled = false;
+        showMsg('Choisis une zone pour charger les centres.');
+        return;
+      }
+
+      showMsg('Chargement des centres…');
+
+      try{
+        const res = await fetch(`/admin/centers/by_zone?zone=${encodeURIComponent(zid)}`, {
+          headers: {'Accept': 'application/json'}
+        });
+        const data = await res.json();
+        if(!data || data.ok !== true){
+          throw new Error((data && data.error) ? data.error : 'Réponse invalide');
+        }
+
+        let centers = (data.centers || []).map(c => ({
+          zone_id: zid,
+          center_id: c.id,
+          center_name: c.name,
+          lat: c.lat,
+          lng: c.lng,
+        }));
+
+        // Prefer those missing coords at the top
+        centers.sort((a,b) => {
+          const am = (a.lat==null || a.lng==null) ? 0 : 1;
+          const bm = (b.lat==null || b.lng==null) ? 0 : 1;
+          if(am !== bm) return am - bm;
+          return (a.center_name || '').localeCompare(b.center_name || '');
+        });
+
+        centersForZone = centers;
+        renderCenterOptions(centersForZone, false);
+
+        showMsg(`Centres chargés : ${centersForZone.length}.`);
+      }catch(err){
+        centersForZone = [];
+        sel.innerHTML = '<option value="">— Aucun centre —</option>';
+        showMsg('Impossible de charger les centres pour cette zone. Vérifie la page Centres / le serveur.');
+      }finally{
+        sel.disabled = false;
+      }
+    }
+
+    // Search in centres list (useful when you have 100+)
+    const centerSearch = $('coordCenterSearch');
+    if(centerSearch){
+      centerSearch.addEventListener('input', () => {
+        const q = (centerSearch.value || '').trim().toLowerCase();
+        if(!q){
+          renderCenterOptions(centersForZone, true);
+          return;
+        }
+        const filtered = (centersForZone || []).filter(c => {
+          const name = (c.center_name || '').toLowerCase();
+          const cid = String(c.center_id || '').toLowerCase();
+          return name.includes(q) || cid.includes(q);
+        });
+        renderCenterOptions(filtered, true);
+      });
+    }
+
+    $('coordZone').addEventListener('change', () => {
+      populateCenters();
+      $('coordLat').value = '';
+      $('coordLng').value = '';
+    });
+
+    $('coordCenter').addEventListener('change', (e) => {
+      const opt = e.target.selectedOptions[0];
+      if(!opt || !opt.value){
+        $('coordLat').value = '';
+        $('coordLng').value = '';
+        return;
+      }
+      $('coordLat').value = opt.dataset.lat || '';
+      $('coordLng').value = opt.dataset.lng || '';
+      showMsg("Astuce : clique sur la carte pour récupérer automatiquement lat/lng.");
+    });
+
+    map.on('click', (e) => {
+      if(!modal.classList.contains('open')) return;
+      if(!$('coordCenter').value){
+        showMsg("Choisis d’abord un centre dans la liste, puis clique sur la carte.");
+        return;
+      }
+      $('coordLat').value = e.latlng.lat.toFixed(6);
+      $('coordLng').value = e.latlng.lng.toFixed(6);
+      showMsg("Coordonnées capturées. Clique sur “Enregistrer”.");
+    });
+
+    async function saveCoords(){
+      const zoneId = $('coordZone').value;
+      const centerId = $('coordCenter').value;
+      const centerOpt = $('coordCenter').selectedOptions[0];
+      const centerName = (centerOpt && centerOpt.dataset && centerOpt.dataset.centerName) ? centerOpt.dataset.centerName : '';
+      const lat = $('coordLat').value.trim();
+      const lng = $('coordLng').value.trim();
+
+      if(!zoneId || !centerId || !lat || !lng){
+        showMsg("Zone, centre, lat et lng sont obligatoires.");
+        return;
+      }
+
+      const body = new URLSearchParams();
+      body.set('csrf_token', CSRF_TOKEN);
+      body.set('zone_id', zoneId);
+      body.set('center_id', centerId);
+      body.set('center_name', centerName);
+      body.set('lat', lat);
+      body.set('lng', lng);
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Enregistrement…";
+
+      try{
+        const res = await fetch(`{{ url_for('admin_centers_set_coords') }}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+          credentials: 'same-origin'
+        });
+        const data = await res.json().catch(() => ({}));
+        if(!res.ok || !data.ok){
+          throw new Error(data.error || ("HTTP " + res.status));
+        }
+        showMsg("Coordonnées enregistrées ✅");
+        await loadMap();  // refresh markers
+        setTimeout(closeModal, 600);
+      }catch(err){
+        console.error(err);
+        showMsg("Erreur lors de l’enregistrement des coordonnées : " + (err.message || err));
+      }finally{
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Enregistrer";
+      }
+    }
+
+    if(openBtn) openBtn.addEventListener('click', openModal);
+    if(closeBtn) closeBtn.addEventListener('click', closeModal);
+    if(saveBtn) saveBtn.addEventListener('click', saveCoords);
+    modal.addEventListener('click', (e) => {
+      if(e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+    });
+
+  });
+})();
+</script>
+{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>Supervision terrain — Pilotage</h1>
+    <p class="muted" style="margin-top:6px;">
+      Vue par zones / centres / bureaux, objectifs (agents & superviseurs) et alertes opérationnelles.
+    </p>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-head">
+      <h2 style="margin:0;">Carte (centres)</h2>
+      <div class="map-toolbar">
+        <label class="muted" style="font-size:12px;">Zone</label>
+        <select id="mapZone" class="input" style="min-width:220px;">
+          <option value="">Toutes les zones</option>
+          {% for zr in zone_rows %}
+            <option value="{{ zr.zone.id }}" {% if zone_detail and zone_detail.zone.id == zr.zone.id %}selected{% endif %}>{{ zr.zone.name }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-sm" type="button" id="btnCoords">Renseigner lat/lng</button>
+      </div>
+      <div id="mapMsg" class="map-msg" style="display:none;"></div>
+    </div>
+    <div id="pilotageMap"></div>
+    <div id="mapHint" class="muted map-legend" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 16px;">
+    <div class="card">
+      <div class="card-head">
+        <h2 style="margin:0;">Vue par zones</h2>
+        <div class="muted" style="font-size:12px;">
+          {% if settings.campaign_start_date and settings.campaign_end_date %}
+            Période : {{ settings.campaign_start_date }} → {{ settings.campaign_end_date }}
+          {% else %}
+            Période : toutes les données
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="zone-grid">
+        {% for zr in zone_rows %}
+          <a class="zone-tile" href="{{ url_for('admin_pilotage', zone=zr.zone.id) }}">
+            <div class="zone-title">
+              <strong>{{ zr.zone.name }}</strong>
+              <span class="pill">{{ zr.total }} / {{ zr.target if zr.target else "—" }}</span>
+            </div>
+            <div class="progress" style="margin-top:10px;">
+              {% set pct = 100 if zr.pct > 100 else zr.pct %}
+              <div class="bar" style="width: {{ pct }}%;"></div>
+            </div>
+            <div class="zone-meta">
+              <span class="muted">{{ zr.pct }}%</span>
+              <span class="muted">
+                P: {{ zr.by_status.pending }} • C: {{ zr.by_status.corriger }} • V: {{ zr.by_status.verifies }} • A: {{ zr.by_status.approuves }}
+              </span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+
+      <div class="muted" style="margin-top:12px;font-size:12px;">
+        P = en attente, C = à corriger, V = vérifiés, A = approuvés.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2 style="margin:0;">Alertes</h2>
+        <a class="btn btn-sm" href="{{ url_for('admin_settings') }}">Configurer</a>
+      </div>
+
+      {% if alerts.zones_en_retard or alerts.agents_inactifs or alerts.pics_anormaux %}
+        {% if alerts.zones_en_retard %}
+          <div class="alert-block">
+            <div class="alert-title">Zones en retard</div>
+            <ul class="list">
+              {% for a in alerts.zones_en_retard %}
+                <li>
+                  <strong>{{ a.zone.name }}</strong>
+                  <div class="muted" style="font-size:12px;">
+                    {{ a.actual_pct }}% vs {{ a.expected_pct }}% attendu ({{ a.total }}/{{ a.target }})
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        {% if alerts.agents_inactifs %}
+          <div class="alert-block">
+            <div class="alert-title">Agents inactifs</div>
+            <ul class="list">
+              {% for a in alerts.agents_inactifs %}
+                <li>
+                  <strong>{{ a.user.display_name }}</strong>
+                  <div class="muted" style="font-size:12px;">
+                    {{ a.hours }} h sans activité
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        {% if alerts.pics_anormaux %}
+          <div class="alert-block">
+            <div class="alert-title">Pics anormaux</div>
+            <ul class="list">
+              {% for a in alerts.pics_anormaux %}
+                <li>
+                  <strong>{{ a.label }}</strong>
+                  <div class="muted" style="font-size:12px;">
+                    {{ a.recent }} en {{ a.window_min }} min (moy. {{ a.baseline }} / fenêtre)
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="muted">Aucune alerte pour l’instant. Tout roule (ou alors c’est louche).</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if zone_detail %}
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head">
+        <h2 style="margin:0;">Détail — {{ zone_detail.zone.name }}</h2>
+        <a class="btn btn-sm" href="{{ url_for('admin_pilotage') }}">Retour zones</a>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Centre</th>
+              <th>Total</th>
+              <th>En attente</th>
+              <th>À corriger</th>
+              <th>Vérifiés</th>
+              <th>Approuvés</th>
+              <th>Rejetés</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in zone_detail.centres %}
+              <tr>
+                <td>
+                  <details>
+                    <summary><strong>{{ c.name }}</strong> <span class="muted">(bureaux)</span></summary>
+                    <div class="table-wrap" style="margin-top:10px;">
+                      <table class="table table-modern" style="font-size:13px;">
+                        <thead>
+                          <tr>
+                            <th>Bureau</th>
+                            <th>Total</th>
+                            <th>P</th>
+                            <th>C</th>
+                            <th>V</th>
+                            <th>A</th>
+                            <th>R</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for b in c.bureaux %}
+                            <tr>
+                              <td>{{ b.name }}</td>
+                              <td><strong>{{ b.total }}</strong></td>
+                              <td>{{ b.pending }}</td>
+                              <td>{{ b.corriger }}</td>
+                              <td>{{ b.verifies }}</td>
+                              <td>{{ b.approuves }}</td>
+                              <td>{{ b.rejetes }}</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                </td>
+                <td><strong>{{ c.total }}</strong></td>
+                <td>{{ c.by_status.pending }}</td>
+                <td>{{ c.by_status.corriger }}</td>
+                <td>{{ c.by_status.verifies }}</td>
+                <td>{{ c.by_status.approuves }}</td>
+                <td>{{ c.by_status.rejetes }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="muted" style="margin-top:10px;font-size:12px;">P=En attente, C=À corriger, V=Vérifiés, A=Approuvés, R=Rejetés.</div>
+    </div>
+  {% endif %}
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-head">
+      <h2 style="margin:0;">Objectifs — Agents & superviseurs</h2>
+      <a class="btn btn-sm" href="{{ url_for('admin_objectives') }}">Modifier</a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table table-modern">
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Rôle</th>
+            <th>Réalisé</th>
+            <th>Objectif</th>
+            <th>Atteinte</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in gauges %}
+            <tr>
+              <td><strong>{{ it.user.display_name }}</strong><div class="muted" style="font-size:12px;">@{{ it.user.username }}</div></td>
+              <td>{{ "Agent" if it.role == "agent" else "Superviseur" }}</td>
+              <td>{{ it.done }}</td>
+              <td>{{ it.target if it.target else "—" }}</td>
+              <td style="min-width:240px;">
+                <div class="progress">
+                  {% set pct = 100 if it.pct > 100 else it.pct %}
+                  <div class="bar" style="width: {{ pct }}%;"></div>
+                </div>
+                <div class="muted" style="font-size:12px;margin-top:4px;">{{ it.pct }}%</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<div id="coordsModal" aria-hidden="true">
+  <div class="coords-card" role="dialog" aria-modal="true" aria-label="Renseigner lat/lng">
+    <div class="coords-top">
+      <h3>Renseigner lat/lng d’un centre</h3>
+      <a id="coordsGoCenters" class="link-muted" href="{{ url_for('admin_centers') }}">Ouvrir la page Centres</a>
+    </div>
+
+    <div class="coords-help">
+      1) Choisis la zone et le centre. 2) Clique sur la carte pour récupérer les coordonnées. 3) Enregistre.
+    </div>
+
+    <div class="coords-row">
+      <div class="field">
+        <label>Zone</label>
+        <select id="coordZone" class="input">
+          <option value="">— Choisir une zone —</option>
+          {% for zr in zone_rows %}
+            <option value="{{ zr.zone.id }}">{{ zr.zone.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Centre</label>
+        <input id="coordCenterSearch" type="text" class="input" placeholder="Rechercher un centre…" />
+        <select id="coordCenter" class="input">
+          <option value="">— Choisir un centre —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Latitude</label>
+        <input id="coordLat" type="text" placeholder="ex: 5.345678" />
+      </div>
+      <div class="field">
+        <label>Longitude</label>
+        <input id="coordLng" type="text" placeholder="ex: -4.012345" />
+      </div>
+    </div>
+
+    <div class="coords-actions">
+      <button class="btn btn-secondary" type="button" id="btnCoordsClose">Fermer</button>
+      <button class="btn" type="button" id="btnCoordsSave">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

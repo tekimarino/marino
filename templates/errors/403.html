@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% set title="Accès refusé" %}{% block content %}
+<div class="card">
+  <h1>403 — Accès refusé</h1>
+  <p>Tu n'as pas l'autorisation d'accéder à cette page.</p>
+  <a class="btn" href="{{ url_for('index') }}">Retour</a>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% set title = "Modifier un utilisateur" %}
+{% block content %}
+  <h1>Modifier un utilisateur</h1>
+
+  <div class="card">
+    <h2>{{ user.username }}</h2>
+
+    <form method="post" class="form grid2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div>
+        <label>Nom complet</label>
+        <input name="full_name" value="{{ user.full_name }}" required>
+      </div>
+
+      <div>
+        <label>Rôle</label>
+        <select name="role" id="edit_role" required>
+          <option value="admin" {% if user.role == "admin" %}selected{% endif %}>admin</option>
+          <option value="supervisor" {% if user.role == "supervisor" %}selected{% endif %}>supervisor</option>
+          <option value="agent" {% if user.role == "agent" %}selected{% endif %}>agent</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Zone (pour agent/supervisor)</label>
+        <select name="zone_id" id="edit_zone">
+          <option value="">—</option>
+          {% for z in zones %}
+            <option value="{{ z.id }}" {% if user.zone_id == z.id %}selected{% endif %}>{{ z.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Superviseur (pour agent)</label>
+        <select name="supervisor_id" id="edit_supervisor">
+          <option value="">—</option>
+          {% for s in supervisors %}
+            <option value="{{ s.id }}" data-zone="{{ s.zone_id }}" {% if user.supervisor_id == s.id %}selected{% endif %}>
+              {{ s.full_name }} ({{ zone_name(s.zone_id) }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="span2">
+        <button class="btn primary" type="submit">Enregistrer</button>
+        <a href="{{ url_for('admin_users') }}" class="btn">Annuler</a>
+      </div>
+    </form>
+  </div>
+
+<script>
+(function () {
+  const roleSel = document.getElementById("edit_role");
+  const zoneSel = document.getElementById("edit_zone");
+  const supSel  = document.getElementById("edit_supervisor");
+  if (!zoneSel || !supSel) return;
+
+  function refresh() {
+    const role = (roleSel && roleSel.value) ? roleSel.value : "";
+    const zone = zoneSel.value || "";
+
+    if (role !== "agent") {
+      supSel.value = "";
+      supSel.disabled = true;
+      for (const opt of supSel.options) opt.hidden = false;
+      return;
+    }
+
+    let visibleCount = 0;
+    let lastVisible = "";
+
+    for (const opt of supSel.options) {
+      if (!opt.value) {
+        opt.hidden = false;
+        opt.textContent = zone ? "— Choisir —" : "Sélectionnez d'abord une zone";
+        continue;
+      }
+      const optZone = opt.getAttribute("data-zone") || "";
+      const show = !!zone && optZone === zone;
+      opt.hidden = !show;
+      if (show) { visibleCount += 1; lastVisible = opt.value; }
+    }
+
+    supSel.disabled = (visibleCount === 0);
+
+    if (visibleCount === 1) {
+      supSel.value = lastVisible;
+    } else {
+      const selected = supSel.selectedOptions && supSel.selectedOptions[0];
+      if (!selected || selected.hidden) supSel.value = "";
+    }
+  }
+
+  zoneSel.addEventListener("change", refresh);
+  if (roleSel) roleSel.addEventListener("change", refresh);
+  refresh();
+})();
+</script>
+
+{% endblock %}

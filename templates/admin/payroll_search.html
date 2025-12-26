@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% set title = "Paie" %}
+{% block content %}
+  <div class="row-between">
+    <div>
+      <h1>Fiches de paie — Agents</h1>
+      <p class="muted">Paiement : <strong>{{ pay_rate_cfa }} F CFA</strong> par personne recensée. Périodes de <strong>14 jours</strong>.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('admin_users') }}">Utilisateurs</a>
+      <a class="btn" href="{{ url_for('admin_registrations') }}">Personnes recensées</a>
+      <a class="btn" href="{{ url_for('admin_payroll_export_csv') }}">Export CSV</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Rechercher un utilisateur</h2>
+    <form method="get" class="form">
+      <div class="grid-2">
+        <div>
+          <label>Recherche (nom, username, rôle, zone)</label>
+          <input name="q" value="{{ q }}" placeholder="ex: agent_01, Adiaho, koumassi...">
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Rechercher</button>
+          <a class="btn secondary" href="{{ url_for('admin_payroll') }}">Réinitialiser</a>
+        </div>
+      </div>
+    </form>
+
+    {% if q %}
+      <h3 style="margin-top:18px;">Résultats</h3>
+      {% if results %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Rôle</th>
+              <th>Zone</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for u in results %}
+            <tr>
+              <td><strong>{{ u.full_name }}</strong><div class="muted small">@{{ u.username }}</div></td>
+              <td>{{ u.role }}</td>
+              <td>{{ zones_map.get(u.zone_id, {}).get('name', '-') }}</td>
+              <td><a class="btn" href="{{ url_for('admin_payroll_user', user_id=u.id) }}">Ouvrir</a></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="hint">Aucun résultat.</div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Rechercher un paiement</h2>
+    <p class="muted">Saisis le <strong>numéro de paiement</strong> (ex: <code>PAY-000015</code> ou l'identifiant interne affiché sur le reçu PDF) pour le retrouver et l'imprimer.</p>
+    <form method="get" class="form">
+      <div class="grid-2">
+        <div>
+          <label>Numéro de paiement</label>
+          <input name="pay_no" value="{{ pay_no or '' }}" placeholder="ex: PAY-000001">
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Rechercher</button>
+          <a class="btn secondary" href="{{ url_for('admin_payroll') }}">Réinitialiser</a>
+        </div>
+      </div>
+    </form>
+
+    {% if pay_rec %}
+      <div style="margin-top:14px;">
+        <div class="hint">
+          <strong>Paiement trouvé</strong> — {{ pay_target.full_name if pay_target else 'Utilisateur inconnu' }} • Période: <strong>{{ period_label(pay_rec.period_start, pay_rec.period_end) }}</strong>
+        </div>
+        <table class="table" style="margin-top:10px;">
+          <thead>
+            <tr>
+              <th>Numéro</th>
+              <th>Agent</th>
+              <th>Zone</th>
+              <th>Montant</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>{{ pay_rec.payment_number or pay_rec.id }}</strong></td>
+              <td>{{ pay_target.full_name if pay_target else '—' }}<div class="muted small">@{{ pay_target.username if pay_target else '-' }}</div></td>
+              <td>{{ zones_map.get(pay_target.zone_id, {}).get('name', '-') if pay_target else '-' }}</td>
+              <td><strong>{{ format_money_cfa(pay_rec.amount|int) }}</strong></td>
+              <td>
+                {% if pay_rec.status == 'PAID' %}
+                  <span class="badge ok">Payé</span>
+                {% else %}
+                  <span class="badge warn">Non payé</span>
+                {% endif %}
+              </td>
+              <td>
+                <a class="btn secondary" href="{{ url_for('admin_payslip', pay_id=pay_rec.id) }}">Ouvrir</a>
+                <a class="btn" href="{{ url_for('admin_payslip_pdf', pay_id=pay_rec.id) }}">PDF</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    {% elif pay_not_found %}
+      <div class="hint" style="margin-top:10px;">Aucun paiement trouvé pour <strong>{{ pay_no }}</strong>.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Agents (accès rapide)</h2>
+    {% if agents %}
+      <div class="grid-3">
+        {% for a in agents %}
+          <a class="card-link" href="{{ url_for('admin_payroll_user', user_id=a.id) }}">
+            <div class="card-link-title">{{ a.full_name }}</div>
+            <div class="muted small">@{{ a.username }} • {{ zones_map.get(a.zone_id, {}).get('name', '—') }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="hint">Aucun agent actif.</div>
+    {% endif %}
+  </div>
+{% endblock %}

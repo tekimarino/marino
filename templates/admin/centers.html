@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% set title = "Centres & bureaux" %}
+{% block content %}
+  <h1>Centres & bureaux</h1>
+  <p class="muted">Référentiel utilisé lors de la validation des dossiers (centre de vote + bureau de vote).</p>
+
+  <div class="card">
+    <form class="form" method="get" style="max-width:520px;">
+      <label>Zone</label>
+      <select name="zone_id" onchange="this.form.submit()">
+        <option value="">— Choisir une zone —</option>
+        {% for z in zones %}
+          <option value="{{ z.id }}" {% if current_zone_id == z.id %}selected{% endif %}>{{ z.name }} - {{ "{:,}".format(zone_population_totals.get(z.id, 0)).replace(",", " ") }} électeurs</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if current_zone_id %}
+    <div class="grid2">
+      <div class="card">
+        <h2>Ajouter un centre</h2>
+        <form class="form" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="add_center">
+          <input type="hidden" name="zone_id" value="{{ current_zone_id }}">
+          <label>Nom du centre</label>
+          <input name="center_name" required placeholder="Ex : ECOLE METHODISTE">
+          <div class="actions" style="margin-top:10px;">
+            <button class="btn primary" type="submit">Ajouter</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Centres de la zone</h2>
+      <p class="muted">{{ zone_centers_count }} centre(s) • {{ zone_bureaux_count }} bureau(x)</p>
+        {% if centers %}
+          {% for c in centers %}
+            <div class="card" style="margin:12px 0;">
+              <div class="row-between">
+                <div>
+                  <strong>{{ c.name }}</strong>
+                  <div class="muted small">{{ c.bureaux|length }} bureau(x)</div>
+                  <div class="muted small">Population électorale : {% if c.pop_elect %}{{ c.pop_elect|format_int }}{% else %}—{% endif %}</div>
+                </div>
+                <form method="post" onsubmit="return confirm('Supprimer ce centre ?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete_center">
+                  <input type="hidden" name="zone_id" value="{{ current_zone_id }}">
+                  <input type="hidden" name="center_id" value="{{ c.id }}">
+                  <button class="btn danger" type="submit">Supprimer</button>
+                </form>
+              </div>
+
+              <form class="form" method="post" style="margin-top:10px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="update_center_coords">
+                <input type="hidden" name="zone_id" value="{{ current_zone_id }}">
+                <input type="hidden" name="center_id" value="{{ c.id }}">
+                <div class="grid2">
+                  <div>
+                    <label>Latitude (GPS)</label>
+                    <input name="lat" value="{{ c.lat if c.lat is not none else '' }}" placeholder="Ex : 5.30012">
+                  </div>
+                  <div>
+                    <label>Longitude (GPS)</label>
+                    <input name="lng" value="{{ c.lng if c.lng is not none else '' }}" placeholder="Ex : -3.98765">
+                  </div>
+                </div>
+                <div class="actions" style="margin-top:8px;">
+                  <button class="btn" type="submit">Enregistrer coordonnées</button>
+                  {% if c.lat is not none and c.lng is not none %}
+                    <a class="btn secondary" target="_blank" rel="noopener" href="https://www.google.com/maps?q={{ c.lat }},{{ c.lng }}">Voir sur Google Maps</a>
+                  {% endif %}
+                </div>
+                <div class="muted small" style="margin-top:6px;">Astuce : tu peux copier/coller les coordonnées depuis Google Maps (format décimal).</div>
+              </form>
+
+              <div class="table-wrap" style="margin-top:10px;">
+                <table class="table">
+                  <thead>
+                    <tr><th>Bureaux</th><th style="width:120px;">Action</th></tr>
+                  </thead>
+                  <tbody>
+                    {% if c.bureaux and c.bureaux|length > 0 %}
+                      {% for b in c.bureaux %}
+                        <tr>
+                          <td>{{ b }}</td>
+                          <td>
+                            <form method="post" onsubmit="return confirm('Supprimer ce bureau ?')">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <input type="hidden" name="action" value="delete_station">
+                              <input type="hidden" name="zone_id" value="{{ current_zone_id }}">
+                              <input type="hidden" name="center_id" value="{{ c.id }}">
+                              <input type="hidden" name="station" value="{{ b }}">
+                              <button class="btn danger" type="submit">Supprimer</button>
+                            </form>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr><td colspan="2" class="muted">Aucun bureau.</td></tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+
+              <form class="form" method="post" style="margin-top:10px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="add_station">
+                <input type="hidden" name="zone_id" value="{{ current_zone_id }}">
+                <input type="hidden" name="center_id" value="{{ c.id }}">
+                <div class="grid2">
+                  <div>
+                    <label>Ajouter un bureau</label>
+                    <input name="station" required placeholder="Ex : BV03">
+                  </div>
+                  <div style="display:flex; align-items:flex-end;">
+                    <button class="btn secondary" type="submit">Ajouter</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="hint">Aucun centre pour cette zone. Commence par en ajouter un.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="row-between">
+        <div>
+          <h2 style="margin:0;">Recensés de la zone</h2>
+          <div class="muted" style="margin-top:4px;">
+            Total : <strong>{{ regs_total }}</strong> (aperçu : <strong>{{ regs_preview|length }}</strong> / <strong>{{ regs_total }}</strong>)
+          </div>
+        </div>
+        <a class="btn secondary" href="{{ url_for('admin_registrations', zone_id=current_zone_id) }}">Voir dans la liste complète</a>
+      </div>
+
+      <div class="table-wrap" style="margin-top:12px;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Électeur</th>
+              <th>Quartier</th>
+              <th>Téléphone</th>
+              <th>N° électeur</th>
+              <th>Centre / bureau</th>
+              <th>Statut</th>
+              <th>Agent</th>
+              <th>Créé le</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if regs_preview and regs_preview|length > 0 %}
+              {% for r in regs_preview %}
+                <tr>
+                  <td><strong>{{ (r.nom or '') }} {{ (r.prenoms or '') }}</strong></td>
+                  <td>{{ r.quartier or '-' }}</td>
+                  <td>{{ r.telephone or '-' }}</td>
+                  <td>{{ r.voter_number or '-' }}</td>
+                  <td>{{ r.polling_center or '-' }}{% if r.polling_station %} / {{ r.polling_station }}{% endif %}</td>
+                  <td><span class="badge">{{ r.status or '-' }}</span></td>
+                  <td>
+                    {% set u = find_user(r.created_by) %}
+                    {% if u %}{{ u.name or u.username }}{% else %}-{% endif %}
+                  </td>
+                  <td>{{ format_date(r.created_at) }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" class="muted">Aucun recensement trouvé pour cette zone (hors brouillons).</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="muted" style="margin-top:10px; font-size:12px;">
+        Astuce : si tu veux tout voir (pagination + filtres), clique sur “Voir dans la liste complète”.
+      </div>
+    </div>
+  {% else %}
+    <div class="hint">Choisis une zone pour gérer ses centres et bureaux.</div>
+  {% endif %}
+{% endblock %}

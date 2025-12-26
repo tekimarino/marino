@@ -1,0 +1,44 @@
+MISE À JOUR (v9) — CONSERVER VOS DONNÉES
+
+Objectif
+- Implémenter les « 18 points » (doublons, brouillons, audit, centres/bureaux, objectifs, double validation, sauvegarde/restauration, SMS planifiés, paie verrouillée + avances, export compta…)
+- SANS PERDRE vos données existantes (électeurs, agents, superviseurs, paie, SMS)
+
+Très important
+➡️ Ne supprimez pas le dossier : elections2028_app/data/
+➡️ Ne supprimez pas le dossier : elections2028_app/uploads/ (si vous utilisez les pièces jointes)
+Ce sont eux qui contiennent vos fichiers JSON et vos pièces jointes.
+
+Option A (recommandé) — Mise à jour par remplacement du code
+1) Avant toute chose : faites une sauvegarde via l’interface Admin
+   Admin → « Créer une sauvegarde maintenant » (ou utilisez Admin → Restaurer → Télécharger une sauvegarde).
+2) Copiez UNIQUEMENT ces éléments du nouveau paquet dans votre dossier actuel :
+   - app.py
+   - templates/
+   - static/
+   - requirements.txt
+3) NE TOUCHEZ PAS au dossier data/ (gardez celui en place).
+4) Installez/mettez à jour les dépendances :
+   - Windows :
+     - Ouvrir un terminal dans elections2028_app
+     - .venv\Scripts\activate
+     - pip install -r requirements.txt
+5) Redémarrez l'application.
+
+Option B — Nouvelle installation (si vous voulez repartir « propre »)
+1) Dézippez cette version dans un nouveau dossier.
+2) Copiez ensuite votre ancien dossier data/ dans ce nouveau dossier :
+   elections2028_app/data/
+3) (Optionnel) Copiez aussi votre ancien dossier uploads/ si vous aviez des pièces jointes.
+4) Redémarrez l'application.
+
+Notes (ce qui change en v9)
+- Détection de doublons + confirmation avant enregistrement.
+- Mode brouillon (DRAFT) + correction par superviseur (NEEDS_CORRECTION).
+- Double validation : superviseur = « Vérifié », admin = « Approuvé » (paramétrable).
+- Référentiel centres/bureaux par zone (admin) + saisie guidée lors de la validation.
+- Objectifs par zone + progression sur le tableau de bord admin.
+- Journal d’audit (qui a fait quoi, quand).
+- Sauvegarde (zip) + restauration (zip) depuis l’interface admin.
+- Paie : verrouillage par période + gestion des avances + export comptable CSV.
+- SMS : campagnes filtrées + planification + historique (logs).

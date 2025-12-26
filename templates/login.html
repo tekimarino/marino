@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% set title = "Connexion" %}
+{% block content %}
+  <div class="card narrow">
+    <h1>Connexion</h1>
+    <p class="muted">Accès réservé aux agents, superviseurs et administrateurs.</p>
+
+    <form method="post" class="form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Nom d'utilisateur</label>
+      <input name="username" autocomplete="username" required>
+
+      <label>Mot de passe</label>
+      <input name="password" type="password" autocomplete="current-password" required>
+
+      <button class="btn primary" type="submit">Se connecter</button>
+    </form>
+  </div>
+{% endblock %}

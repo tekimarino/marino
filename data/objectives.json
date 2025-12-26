@@ -1,0 +1,75 @@
+{
+  "zones": {
+    "3c5e4599-661b-48e4-8f13-4cd803311c5a": {
+      "target": 288,
+      "desired_pct": 50.0
+    },
+    "97339127-b742-4058-afc7-6a06348c55ec": {
+      "target": 159,
+      "desired_pct": 50.0
+    },
+    "89b70b03-6921-4449-898d-3db016a7d9cb": {
+      "target": 1236,
+      "desired_pct": 50.0
+    },
+    "385377b2-8ccf-4f01-b8f1-ffdf1d7c9122": {
+      "target": 0
+    },
+    "3363c660-d342-48d0-8875-c16d4707c01b": {
+      "target": 0
+    },
+    "0eb02739-9704-4a18-9e08-c5a9aa4be87b": {
+      "target": 2465,
+      "desired_pct": 50.0
+    },
+    "738e039c-1fb7-446e-8819-ae4ef3adb3c9": {
+      "target": 1438,
+      "desired_pct": 50.0
+    },
+    "5e92248c-a553-4164-95e7-3f00147d1248": {
+      "target": 2054,
+      "desired_pct": 50.0
+    },
+    "78dfa91d-2a75-4320-a7a3-49e8feaf30e6": {
+      "target": 0
+    },
+    "7a6958b2-aaa4-4a83-ba38-5372fd7af3fa": {
+      "target": 0
+    },
+    "423c02ca-cc59-40be-8261-0f5a9f6e77f9": {
+      "target": 0
+    },
+    "a039f2b6-fd80-4963-9c00-8ce9c2ccdad7": {
+      "target": 799,
+      "desired_pct": 50.0
+    },
+    "24bc1eea-b9ed-49b2-b04e-de0d2f32569b": {
+      "target": 11,
+      "desired_pct": 50.0
+    },
+    "a453107b-1b31-432c-b032-80ba94936197": {
+      "target": 1113,
+      "desired_pct": 50.0
+    }
+  },
+  "users": {
+    "ef285f32-6588-403d-81dd-e18f557d2e02": {
+      "target": 50
+    },
+    "5511947b-93ab-43f1-a5f7-a82c7534f48e": {
+      "target": 50
+    },
+    "b52ffe17-4271-4c94-bc50-babc98ebc59b": {
+      "target": 30
+    },
+    "64f07a11-5234-4c7b-8c08-5ac659d9e779": {
+      "target": 0
+    },
+    "deac702a-6e54-46fe-bff0-b1ea691ee2fe": {
+      "target": 0
+    },
+    "6cd605f7-abb0-428d-b460-8b3d08d96ed8": {
+      "target": 0
+    }
+  }
+}

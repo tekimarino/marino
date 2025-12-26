@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% set title = "SMS de masse" %}
+{% block content %}
+  <h1>SMS de masse</h1>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Configuration</h2>
+      <p class="muted">Mode actuel : <strong>{{ (cfg.mode or 'dry_run')|upper }}</strong>. En <strong>DRY_RUN</strong>, rien n’est envoyé (historique quand même).</p>
+
+      <form method="post" class="form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="save_config">
+
+        <label>Mode</label>
+        <select name="mode">
+          <option value="dry_run" {% if (cfg.mode or 'dry_run') == 'dry_run' %}selected{% endif %}>dry_run (simulation)</option>
+          <option value="http_json" {% if (cfg.mode or '') == 'http_json' %}selected{% endif %}>http_json (appel API)</option>
+        </select>
+
+        <label>Sender ID (optionnel)</label>
+        <input name="sender_id" value="{{ cfg.sender_id or '' }}" placeholder="ex: Mairie">
+
+        <div class="hint">Pour brancher un fournisseur : renseigne l’URL + token ci-dessous (mode http_json).</div>
+
+        <label>URL API</label>
+        <input name="http_url" value="{{ (cfg.http_json or {}).get('url','') }}" placeholder="https://api.fournisseur/sms">
+
+        <label>Token API</label>
+        <input name="http_token" value="{{ (cfg.http_json or {}).get('token','') }}" placeholder="Bearer ...">
+
+        <div class="grid-2">
+          <div>
+            <label>Champ 'to'</label>
+            <input name="to_field" value="{{ (cfg.http_json or {}).get('to_field','to') }}">
+          </div>
+          <div>
+            <label>Champ 'message'</label>
+            <input name="message_field" value="{{ (cfg.http_json or {}).get('message_field','message') }}">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Champ 'sender'</label>
+            <input name="sender_field" value="{{ (cfg.http_json or {}).get('sender_field','sender') }}">
+          </div>
+          <div class="form-actions">
+            <button class="btn" type="submit">Enregistrer</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Créer une campagne</h2>
+      <form method="post" class="form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="grid-2">
+          <div>
+            <label>Zone</label>
+            <select name="zone_id">
+              <option value="">Toutes</option>
+              {% for z in zones %}
+                <option value="{{ z.id }}">{{ z.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>Centre de vote</label>
+            <select name="polling_center">
+              <option value="">Tous</option>
+              {% for c in centers %}
+                <option value="{{ c }}">{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Statut ciblé</label>
+            <select name="status_filter">
+              <option value="">Tous</option>
+              {% for s in statuses %}
+                <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label>
+              <input type="checkbox" name="only_missing_voter" value="on">
+              Seulement ceux qui n’ont pas de numéro d’électeur
+            </label>
+          </div>
+        </div>
+
+        <label>Message</label>
+        <textarea name="message" rows="4" placeholder="Ton SMS..."></textarea>
+
+        <label>Date/heure programmée (optionnel)</label>
+        <input name="scheduled_at" placeholder="2028-04-01T18:00:00+00:00">
+
+        <div class="actions">
+          <button class="btn primary" type="submit" name="action" value="send_now">Envoyer maintenant</button>
+          <button class="btn" type="submit" name="action" value="schedule">Programmer</button>
+          <button class="btn secondary" type="submit" name="action" value="run_due">Traiter les campagnes en attente</button>
+        </div>
+
+        <div class="hint">Les campagnes sont envoyées par lots lors des traitements (sécurité). Si la liste est grande, clique plusieurs fois.</div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row-between">
+      <h2>Campagnes récentes</h2>
+      <form method="post" style="margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="run_due">
+        <button class="btn secondary" type="submit">Traiter maintenant</button>
+      </form>
+    </div>
+
+    {% if camps %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date création</th>
+              <th>Zone</th>
+              <th>Centre</th>
+              <th>Cible</th>
+              <th>Programmée</th>
+              <th>Statut</th>
+              <th>Progression</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in camps %}
+              <tr>
+                <td class="mono">{{ (c.created_at or '')[:19].replace('T',' ') }}</td>
+                <td>{{ zone_name(c.zone_id) if c.zone_id else '—' }}</td>
+                <td>{{ c.polling_center or '—' }}</td>
+                <td>
+                  {% if c.status_filter %}<span class="badge">{{ c.status_filter }}</span>{% else %}<span class="muted">Tous</span>{% endif %}
+                  {% if c.only_missing_voter %}<span class="badge warn">Sans N° électeur</span>{% endif %}
+                </td>
+                <td class="mono">{{ (c.scheduled_at or '')[:19].replace('T',' ') }}</td>
+                <td>
+                  {% if c.status == 'SCHEDULED' %}<span class="badge warn">En attente</span>{% endif %}
+                  {% if c.status == 'SENDING' %}<span class="badge warn">En cours</span>{% endif %}
+                  {% if c.status == 'DONE' %}<span class="badge ok">Terminé</span>{% endif %}
+                </td>
+                <td><strong>{{ c.sent_count or 0 }}</strong> / {{ c.total_count or 0 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="hint">Aucune campagne pour l’instant.</div>
+    {% endif %}
+  </div>
+{% endblock %}

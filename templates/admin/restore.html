@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set title = "Restaurer" %}
+{% block content %}
+  <h1>Restaurer une sauvegarde</h1>
+  <p class="muted">Cette action remplace les fichiers JSON et (optionnellement) les pièces jointes. Une sauvegarde automatique est faite juste avant.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Sauvegardes existantes</h2>
+      {% if backups %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Fichier</th><th style="width:140px;">Action</th></tr></thead>
+            <tbody>
+              {% for b in backups %}
+                <tr>
+                  <td class="mono">{{ b }}</td>
+                  <td><a class="btn" href="{{ url_for('admin_backup_download', name=b) }}">Télécharger</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="hint">Aucune sauvegarde dans le dossier <code>backups/</code>.</div>
+      {% endif %}
+      <div class="actions" style="margin-top:12px;">
+        <a class="btn" href="{{ url_for('admin_backup') }}">Créer une nouvelle sauvegarde</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Restaurer depuis un ZIP</h2>
+      <form class="form" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Fichier ZIP</label>
+        <input type="file" name="backup_zip" accept=".zip" required>
+
+        <label style="margin-top:12px;">Confirmation</label>
+        <input name="confirm" placeholder="Tape RESTORE" required>
+        <div class="hint">Tape <strong>RESTORE</strong> pour confirmer.</div>
+
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn danger" type="submit" onclick="return confirm('Confirmer la restauration ?')">Restaurer</button>
+          <a class="btn" href="{{ url_for('admin_dashboard') }}">Retour</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

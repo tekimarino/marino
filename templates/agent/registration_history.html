@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Historique du dossier #{{ reg.id }}</h1>
+<p><a href="{{ url_for('agent_edit_registration', reg_id=reg.id) }}">← Retour au dossier</a></p>
+
+<div class="card">
+  <div class="grid">
+    <div><strong>Identité</strong><br>{{ reg.nom }} {{ reg.prenoms }} — {{ format_date(reg.dob) }}</div>
+    <div><strong>Zone</strong><br>{{ zone_name(reg.zone_id) }}</div>
+    <div><strong>Quartier</strong><br>{{ reg.quartier }}</div>
+    <div>
+      {% set score = reg.reliability_score or 0 %}
+      <strong>Fiabilité</strong><br>
+      <span class="badge {% if score >= 85 %}ok{% elif score >= 60 %}warn{% else %}danger{% endif %}">{{ score }}%</span>
+    </div>
+  </div>
+</div>
+
+{% set field_labels = {
+  'nom':'Nom', 'prenoms':'Prénoms', 'dob':'Date de naissance', 'quartier':'Quartier', 'telephone':'Téléphone',
+  'voter_number':'N° électeur', 'polling_center':'Centre', 'polling_station':'Bureau',
+  'status':'Statut', 'notes':'Notes', 'qc_notes':'Notes QC', 'correction_reason':'Motif de correction',
+  'photos':'Photos (nb)', 'reliability_score':'Fiabilité'
+} %}
+
+{% set action_labels = {
+  'reg.create':'Création',
+  'reg.update_draft':'Mise à jour (brouillon)',
+  'reg.submit':'Soumission au superviseur',
+  'reg.verify':'Validation superviseur',
+  'reg.reject':'Rejet superviseur',
+  'reg.needs_correction':'Correction demandée',
+  'reg.reset_pending':'Retour en attente',
+  'reg.admin_approve':'Validation admin',
+  'reg.admin_reject':'Rejet admin'
+} %}
+
+<div class="card">
+  <h2>Journal des actions</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:190px">Date/Heure</th>
+          <th style="width:180px">Acteur</th>
+          <th style="width:170px">Action</th>
+          <th>Détails</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in history %}
+        {% set d = e.details or {} %}
+        <tr>
+          <td>{{ e.at }}</td>
+          <td>{{ (e._actor.full_name if e._actor else e.actor_id) or e.actor_id }}</td>
+          <td>{{ action_labels.get(e.action, e.action) }}</td>
+          <td>
+            {% if d.changes %}
+              <ul style="margin:0; padding-left:18px;">
+                {% for c in d.changes %}
+                  <li><strong>{{ field_labels.get(c.field, c.field) }}</strong> : {{ c.from if c.from not in [None, ''] else '-' }} → {{ c.to if c.to not in [None, ''] else '-' }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              {% if d.reason %}<div><strong>Motif:</strong> {{ d.reason }}</div>{% endif %}
+              {% if d.status %}<div><strong>Statut:</strong> {{ d.status }}</div>{% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Aucun historique disponible.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

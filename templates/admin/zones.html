@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% set title = "Zones" %}
+{% block content %}
+  <h1>Zones</h1>
+
+  <div class="card">
+    <h2>Ajouter une zone</h2>
+    <form method="post" class="form inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="add">
+      <input name="name" placeholder="Nom de la zone (ex. Koko, Plateau...)" required>
+      <button class="btn primary" type="submit">Ajouter</button>
+    </form>
+    <p class="muted">Tu peux compléter la liste ici au fur et à mesure.</p>
+  </div>
+
+  <div class="card">
+    <h2>Liste des zones</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Zone</th>
+          <th style="width: 260px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for z in zones %}
+          <tr>
+            <td><strong>{{ z.name }}</strong></td>
+            <td>
+              <div class="inline" style="gap: 10px;">
+                <button
+                  type="button"
+                  class="btn"
+                  data-zone-id="{{ z.id }}"
+                  data-zone-name="{{ z.name|e }}"
+                  onclick="openEditZone(this)">
+                  Modifier
+                </button>
+
+                <form method="post" class="inline" onsubmit="return confirm('Supprimer cette zone ? Elle disparaîtra des listes.');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="zone_id" value="{{ z.id }}">
+                  <button class="btn danger" type="submit">Supprimer</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p class="muted" style="margin-top: 12px;">Astuce : si tu supprimes une zone par erreur, tu peux restaurer les données via <strong>Restaurer</strong> (menu admin).</p>
+  </div>
+
+  <!-- Modal: edit zone -->
+  <div id="editZoneModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:18px; max-width:720px; width:92%; padding:22px; box-shadow:0 10px 40px rgba(0,0,0,.25);">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+        <div>
+          <h2 style="margin:0 0 6px 0;">Modifier la zone</h2>
+          <p class="muted" style="margin:0;">Change uniquement le nom (les dossiers/centres liés restent rattachés à la même zone).</p>
+        </div>
+        <button class="btn" type="button" onclick="closeEditZone()">✕</button>
+      </div>
+
+      <form method="post" style="margin-top:16px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="update">
+        <input type="hidden" name="zone_id" id="edit_zone_id">
+
+        <div class="grid" style="grid-template-columns: 1fr; gap: 12px;">
+          <div>
+            <label style="display:block; font-weight:600; margin-bottom:6px;">Nom de la zone</label>
+            <input name="name" id="edit_zone_name" required>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+          <button class="btn" type="button" onclick="closeEditZone()">Annuler</button>
+          <button class="btn primary" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openEditZone(btn) {
+      const id = btn.getAttribute('data-zone-id');
+      const name = btn.getAttribute('data-zone-name') || '';
+      document.getElementById('edit_zone_id').value = id;
+      document.getElementById('edit_zone_name').value = name;
+      const modal = document.getElementById('editZoneModal');
+      modal.style.display = 'flex';
+      setTimeout(() => document.getElementById('edit_zone_name').focus(), 0);
+    }
+    function closeEditZone() {
+      const modal = document.getElementById('editZoneModal');
+      modal.style.display = 'none';
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeEditZone();
+    });
+    document.getElementById('editZoneModal').addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'editZoneModal') closeEditZone();
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,637 @@
+{
+  "_default": [
+    {
+      "id": "001-001",
+      "name": "ECOLE METHODISTE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08"
+      ]
+    },
+    {
+      "id": "001-002",
+      "name": "GS AWOSSI AHOULOU 1",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08"
+      ]
+    },
+    {
+      "id": "001-003",
+      "name": "GS MOULO BROU AN 2000",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06"
+      ]
+    },
+    {
+      "id": "001-004",
+      "name": "EPP BONOUA HARRIS 1-2",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ]
+    },
+    {
+      "id": "001-005",
+      "name": "GS BONOUA MUNICIPALITE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ]
+    },
+    {
+      "id": "001-006",
+      "name": "EPP IMPERIE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ]
+    },
+    {
+      "id": "001-007",
+      "name": "GS BONHI ADJA",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08",
+        "BV09"
+      ]
+    },
+    {
+      "id": "001-008",
+      "name": "GROUPE SCOLAIRE AKPA GNAGNE AHO",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08",
+        "BV09",
+        "BV10"
+      ]
+    },
+    {
+      "id": "001-009",
+      "name": "EPP ADIAHO",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ]
+    },
+    {
+      "id": "001-010",
+      "name": "EPP SAMO",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08",
+        "BV09"
+      ]
+    },
+    {
+      "id": "001-011",
+      "name": "EPP YAHOU A ET B",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08"
+      ]
+    },
+    {
+      "id": "001-012",
+      "name": "EPP HARRIS 1-2",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06"
+      ]
+    },
+    {
+      "id": "001-013",
+      "name": "GROUPE SCOLAIRE OBROU KOUASSI",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06"
+      ]
+    },
+    {
+      "id": "001-014",
+      "name": "COLLEGE CHRIST-ROI",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ]
+    },
+    {
+      "id": "001-015",
+      "name": "GROUPE SCOLAIRE EMMANUEL",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ]
+    },
+    {
+      "id": "001-016",
+      "name": "EPP AMETHIER JEAN BAPTISTE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ]
+    },
+    {
+      "id": "001-017",
+      "name": "PLACE PUBLIQUE KODJOBOUE",
+      "bureaux": [
+        "BV01",
+        "BV02"
+      ]
+    },
+    {
+      "id": "001-018",
+      "name": "COLLEGE JESUS-MARIE",
+      "bureaux": [
+        "BV01",
+        "BV02"
+      ]
+    },
+    {
+      "id": "001-019",
+      "name": "EPP ANDRE MAUD",
+      "bureaux": [
+        "BV01"
+      ]
+    },
+    {
+      "id": "001-020",
+      "name": "FOYER DES JEUNES DE BONOUA",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ]
+    },
+    {
+      "id": "001-021",
+      "name": "EPP YAOU C ET D",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ]
+    },
+    {
+      "id": "001-022",
+      "name": "EPP JEAN-BAPTISTE OTRON",
+      "bureaux": [
+        "BV01"
+      ]
+    },
+    {
+      "id": "001-023",
+      "name": "COLLEGE MODERNE YAOU BONOUA",
+      "bureaux": [
+        "BV01"
+      ]
+    },
+    {
+      "id": "001-024",
+      "name": "EPP EKRA MATHIEU DE TCHANCTHEVE",
+      "bureaux": [
+        "BV01"
+      ]
+    },
+    {
+      "id": "001-025",
+      "name": "COLLEGE PRIVE ELEPHANT",
+      "bureaux": [
+        "BV01",
+        "BV02"
+      ]
+    }
+  ],
+  "97339127-b742-4058-afc7-6a06348c55ec": [
+    {
+      "id": "001-017",
+      "name": "PLACE PUBLIQUE KODJOBOUE",
+      "lat": 5.2430805556287,
+      "lng": -3.579844898909918,
+      "bureaux": [
+        "BV01",
+        "BV02"
+      ],
+      "pop_elect": 797
+    }
+  ],
+  "3c5e4599-661b-48e4-8f13-4cd803311c5a": [
+    {
+      "id": "1f19f47f-098d-48b6-b6b8-fb04c5f08c0c",
+      "name": "EPP ADIAHO",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ],
+      "lat": 5.285373,
+      "lng": -3.615397,
+      "pop_elect": 1442
+    }
+  ],
+  "89b70b03-6921-4449-898d-3db016a7d9cb": [
+    {
+      "id": "306f3e61-e40d-4a46-a9d9-2d97f774cdf3",
+      "name": "GS BONOUA MUNICIPALITE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ],
+      "lat": 5.265996,
+      "lng": -3.595056,
+      "pop_elect": 1771
+    },
+    {
+      "id": "1d9bd8f1-7aad-4e61-bdef-05f601840cf3",
+      "name": "EPP AMETHIER JEAN BAPTISTE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ],
+      "lat": 5.265497,
+      "lng": -3.59471,
+      "pop_elect": 1952
+    },
+    {
+      "id": "8fd81e1d-e804-4c94-9c04-a1f1d210a045",
+      "name": "GROUPE SCOLAIRE EMMANUEL",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ],
+      "lat": 5.269197761472177,
+      "lng": -3.5884440696617843,
+      "pop_elect": 2034
+    },
+    {
+      "id": "75744d8d-8a06-4e74-9893-47b146068ec8",
+      "name": "EPP ANDRE MAUD",
+      "bureaux": [
+        "BV01"
+      ],
+      "lat": 5.266309,
+      "lng": -3.594882,
+      "pop_elect": 425
+    }
+  ],
+  "a039f2b6-fd80-4963-9c00-8ce9c2ccdad7": [
+    {
+      "id": "c377dfce-332b-4ae7-a1ca-2511eefc3def",
+      "name": "EPP SAMO",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08",
+        "BV09"
+      ],
+      "lat": 5.282465709946041,
+      "lng": -3.519807419456273,
+      "pop_elect": 3606
+    },
+    {
+      "id": "be527033-d952-423f-acfb-6165348667a8",
+      "name": "EPP JEAN-BAPTISTE OTRON",
+      "bureaux": [
+        "BV01"
+      ],
+      "lat": 5.292091261245978,
+      "lng": -3.517318329483723,
+      "pop_elect": 387
+    }
+  ],
+  "24bc1eea-b9ed-49b2-b04e-de0d2f32569b": [
+    {
+      "id": "dc39b3cc-2dbf-42d4-989d-f2329f43ed91",
+      "name": "EPP EKRA MATHIEU DE TCHANCTHEVE",
+      "bureaux": [
+        "BV01"
+      ],
+      "lat": 5.312424737718824,
+      "lng": -3.557751177411783,
+      "pop_elect": 57
+    }
+  ],
+  "a453107b-1b31-432c-b032-80ba94936197": [
+    {
+      "id": "6120fff8-a0d9-4a21-984e-3b3edc3de275",
+      "name": "EPP YAOU A ET B",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08"
+      ],
+      "lat": 5.245182,
+      "lng": -3.631245,
+      "pop_elect": 3160
+    },
+    {
+      "id": "5d553f2a-c06a-4694-aad9-d55332ecee5f",
+      "name": "EPP YAOU C ET D",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ],
+      "lat": 5.244706,
+      "lng": -3.622497,
+      "pop_elect": 1730
+    },
+    {
+      "id": "6f2fb1b0-96ae-4333-809f-4cba9f252db5",
+      "name": "COLLEGE MODERNE YAOU BONOUA",
+      "bureaux": [
+        "BV01"
+      ],
+      "lat": 5.231424261488234,
+      "lng": -3.6486590051564662,
+      "pop_elect": 149
+    },
+    {
+      "id": "52f6fffc-807c-47b6-8dd8-09ffd451b9ea",
+      "name": "COLLEGE PRIVE ELEPHANT",
+      "bureaux": [
+        "BV01",
+        "BV02"
+      ],
+      "lat": 5.244703535427858,
+      "lng": -3.6203554146810917,
+      "pop_elect": 525
+    }
+  ],
+  "0eb02739-9704-4a18-9e08-c5a9aa4be87b": [
+    {
+      "id": "35bed00f-216a-4a40-ac74-bfba4e5a4244",
+      "name": "ECOLE METHODISTE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08"
+      ],
+      "lat": 5.27845,
+      "lng": -3.598652,
+      "pop_elect": 3164
+    },
+    {
+      "id": "bd8447b5-d909-428d-9e77-e37c27d0225a",
+      "name": "GS AWOSSI AHOULOU 1",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08"
+      ],
+      "lat": 5.282262722922907,
+      "lng": -3.5942104708570617,
+      "pop_elect": 3251
+    },
+    {
+      "id": "519b019d-1fea-47e3-b84f-76244f56bdd6",
+      "name": "GS MOULO BROU AN 2000",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06"
+      ],
+      "lat": 5.2771079786113715,
+      "lng": -3.5889029482928354,
+      "pop_elect": 2637
+    },
+    {
+      "id": "f9dd0e17-20fa-43a2-8399-8dbb945e4abd",
+      "name": "GROUPE SCOLAIRE OBROU KOUASSI",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06"
+      ],
+      "lat": 5.284522187592087,
+      "lng": -3.5914778689502973,
+      "pop_elect": 2481
+    },
+    {
+      "id": "48a436dc-06e0-4bea-bc6b-a5888dec0620",
+      "name": "COLLEGE JESUS-MARIE",
+      "bureaux": [
+        "BV01",
+        "BV02"
+      ],
+      "lat": 5.289164424123434,
+      "lng": -3.5839318636385253,
+      "pop_elect": 790
+    }
+  ],
+  "5e92248c-a553-4164-95e7-3f00147d1248": [
+    {
+      "id": "297377bc-0696-418e-8fe7-61e84766192e",
+      "name": "EPP BONOUA HARRIS 1-2",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ],
+      "lat": 5.275109,
+      "lng": -3.595596,
+      "pop_elect": 1924
+    },
+    {
+      "id": "1835177a-df06-46af-8920-a1300f46aaad",
+      "name": "GROUPE SCOLAIRE AKPA GNAGNE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08",
+        "BV09",
+        "BV10"
+      ],
+      "lat": 5.27237,
+      "lng": -3.597202,
+      "pop_elect": 4387
+    },
+    {
+      "id": "f29f0e50-1f7e-4a24-9922-bceb6d5791a8",
+      "name": "FOYER DES JEUNES DE BONOUA",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ],
+      "lat": 5.27299044745881,
+      "lng": -3.5980782231667368,
+      "pop_elect": 1495
+    },
+    {
+      "id": "9a65e3b9-84fb-4ac6-80a6-5f278efe803f",
+      "name": "EPP HARRIS 1-2",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06"
+      ],
+      "lat": 5.275034,
+      "lng": -3.595735,
+      "pop_elect": 2462
+    }
+  ],
+  "738e039c-1fb7-446e-8819-ae4ef3adb3c9": [
+    {
+      "id": "38302247-2949-4c04-a7e3-472c94e0c54f",
+      "name": "EPP IMPERIE",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04"
+      ],
+      "lat": 5.25964,
+      "lng": -3.613154,
+      "pop_elect": 1475
+    },
+    {
+      "id": "cf22e47e-13b6-49e3-8d3d-b8fe6e3a4e9d",
+      "name": "GS BONHI ADJA",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05",
+        "BV06",
+        "BV07",
+        "BV08",
+        "BV09"
+      ],
+      "lat": 5.269127542875506,
+      "lng": -3.5996088422171693,
+      "pop_elect": 3612
+    },
+    {
+      "id": "e9bbd7bd-cc7a-4dc6-b4e1-37639cebd5b2",
+      "name": "COLLEGE CHRIST-ROI",
+      "bureaux": [
+        "BV01",
+        "BV02",
+        "BV03",
+        "BV04",
+        "BV05"
+      ],
+      "lat": 5.263615,
+      "lng": -3.60184,
+      "pop_elect": 2102
+    }
+  ]
+}

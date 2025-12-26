@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}{% if title %} — {{ title }}{% endif %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ app_version }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <div class="logo">🗳️</div>
+        <div>
+          <div class="app-title">{{ app_name }}</div>
+          <div class="app-subtitle">Enregistrement & validation par zones</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        {% if me %}
+          {% if me.role == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}">Tableau admin</a>
+            <a href="{{ url_for('admin_registrations') }}">Recensés</a>
+            <a href="{{ url_for('admin_approvals') }}">Approbations</a>
+            <a href="{{ url_for('admin_users') }}">Utilisateurs</a>
+            <a href="{{ url_for('admin_zones') }}">Zones</a>
+            <a href="{{ url_for('admin_centers') }}">Centres</a>
+            <a href="{{ url_for('admin_objectives') }}">Objectifs</a>
+            <a href="{{ url_for('admin_pilotage') }}">Pilotage</a>
+            <a href="{{ url_for('admin_payroll') }}">Paie</a>
+            <a href="{{ url_for('admin_sms') }}">SMS</a>
+            <a href="{{ url_for('admin_audit') }}">Audit</a>
+            <a href="{{ url_for('admin_settings') }}">Paramètres</a>
+            <a href="{{ url_for('admin_restore') }}">Restaurer</a>
+          {% elif me.role == 'supervisor' %}
+            <a href="{{ url_for('supervisor_dashboard') }}">Tableau superviseur</a>
+            <a href="{{ url_for('supervisor_sms') }}">SMS de zone</a>
+          {% elif me.role == 'agent' %}
+            <a href="{{ url_for('agent_dashboard') }}">Tableau agent</a>
+            <a class="btn" href="{{ url_for('agent_new_registration') }}">+ Nouvel électeur</a>
+          {% endif %}
+
+          <span class="me-pill">{{ me.full_name }} • {{ me.role }}</span>
+          <a class="danger" href="{{ url_for('logout') }}">Déconnexion</a>
+        {% else %}
+          <a href="{{ url_for('login') }}">Connexion</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

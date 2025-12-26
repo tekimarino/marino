@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% set title = "Utilisateurs" %}
+{% block content %}
+  <h1>Utilisateurs</h1>
+
+  <div class="card">
+    <h2>Créer un utilisateur</h2>
+
+    <form method="post" class="form grid2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="create">
+
+      <div>
+        <label>Nom d'utilisateur (unique)</label>
+        <input name="username" placeholder="ex. agent_12" required>
+      </div>
+
+      <div>
+        <label>Nom complet</label>
+        <input name="full_name" placeholder="Nom et prénom" required>
+      </div>
+
+      <div>
+        <label>Rôle</label>
+        <select name="role" id="create_role" required>
+          <option value="">— Choisir —</option>
+          <option value="admin">admin</option>
+          <option value="supervisor">supervisor</option>
+          <option value="agent">agent</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Mot de passe</label>
+        <input name="password" type="password" placeholder="Mot de passe initial" required>
+      </div>
+
+      <div>
+        <label>Zone (pour agent/supervisor)</label>
+        <select name="zone_id" id="create_zone">
+          <option value="">—</option>
+          {% for z in zones %}
+            <option value="{{ z.id }}">{{ z.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Superviseur (pour agent)</label>
+        <select name="supervisor_id" id="create_supervisor">
+          <option value="">—</option>
+          {% for s in supervisors %}
+            <option value="{{ s.id }}" data-zone="{{ s.zone_id }}">{{ s.full_name }} ({{ zones_map.get(s.zone_id, {}).get("name", "—") }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="span2">
+        <button class="btn primary" type="submit">Créer</button>
+        <p class="muted">Rappel : un agent doit avoir une zone + un superviseur.</p>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Liste des utilisateurs</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Nom</th>
+          <th>Rôle</th>
+          <th>Zone</th>
+          <th>Superviseur</th>
+          <th>Statut</th>
+          <th style="width: 420px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td><strong>{{ u.username }}</strong></td>
+            <td>{{ u.full_name }}</td>
+            <td><span class="badge">{{ u.role }}</span></td>
+            <td>{{ zones_map.get(u.zone_id, {}).get("name", "—") }}</td>
+            <td>
+              {% if u.supervisor_id %}
+                {% set sup = (supervisors | selectattr("id", "equalto", u.supervisor_id) | list | first) %}
+                {{ sup.full_name if sup else "—" }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}
+                <span class="badge ok">Actif</span>
+              {% else %}
+                <span class="badge warn">Inactif</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="actions">
+                {% if u.role in ("agent", "supervisor") %}
+                  <a href="{{ url_for('admin_user_edit', user_id=u.id) }}" class="btn secondary">Modifier</a>
+
+                  {% if u.id not in locked_user_ids %}
+                    <form method="post" class="inline" action="{{ url_for('admin_user_delete', user_id=u.id) }}" onsubmit="return confirm('Supprimer définitivement cet utilisateur ?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn danger" type="submit">Supprimer</button>
+                    </form>
+                  {% endif %}
+                {% endif %}
+
+                <form method="post" class="inline" action="{{ url_for('admin_user_toggle', user_id=u.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn" type="submit">
+                    {% if u.is_active %}Désactiver{% else %}Activer{% endif %}
+                  </button>
+                </form>
+
+                <form method="post" class="inline" action="{{ url_for('admin_user_reset_password', user_id=u.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input name="new_password" type="password" placeholder="Nouveau mot de passe" required>
+                  <button class="btn" type="submit">Réinitialiser</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p class="muted">Conseil pro : imposez des mots de passe forts et utilisez HTTPS en production.</p>
+  </div>
+
+<script>
+(function () {
+  const roleSel = document.getElementById("create_role");
+  const zoneSel = document.getElementById("create_zone");
+  const supSel  = document.getElementById("create_supervisor");
+  if (!zoneSel || !supSel) return;
+
+  function refresh() {
+    const role = (roleSel && roleSel.value) ? roleSel.value : "";
+    const zone = zoneSel.value || "";
+
+    if (role !== "agent") {
+      supSel.value = "";
+      supSel.disabled = true;
+      for (const opt of supSel.options) opt.hidden = false;
+      return;
+    }
+
+    let visibleCount = 0;
+    let lastVisible = "";
+
+    for (const opt of supSel.options) {
+      if (!opt.value) {
+        opt.hidden = false;
+        opt.textContent = zone ? "— Choisir —" : "Sélectionnez d'abord une zone";
+        continue;
+      }
+      const optZone = opt.getAttribute("data-zone") || "";
+      const show = !!zone && optZone === zone;
+      opt.hidden = !show;
+      if (show) { visibleCount += 1; lastVisible = opt.value; }
+    }
+
+    supSel.disabled = (visibleCount === 0);
+
+    if (visibleCount === 1) {
+      supSel.value = lastVisible;
+    } else {
+      const selected = supSel.selectedOptions && supSel.selectedOptions[0];
+      if (!selected || selected.hidden) supSel.value = "";
+    }
+  }
+
+  zoneSel.addEventListener("change", refresh);
+  if (roleSel) roleSel.addEventListener("change", refresh);
+  refresh();
+})();
+</script>
+
+{% endblock %}

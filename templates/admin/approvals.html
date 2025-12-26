@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% set title = "Approbations" %}
+{% block content %}
+  <h1>Approbations</h1>
+  <p class="muted">Les dossiers affichés ici sont <strong>Vérifiés</strong> et attendent l’approbation finale de l’admin.</p>
+
+  <div class="card">
+    <div class="row-between">
+      <h2>En attente ({{ pending|length }})</h2>
+      <a class="btn" href="{{ url_for('admin_settings') }}">Paramètres</a>
+    </div>
+
+    {% if pending %}
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="actions" style="margin:10px 0;">
+          <button class="btn primary" name="action" value="approve" type="submit" onclick="return confirm('Approuver les dossiers sélectionnés ?')">Approuver la sélection</button>
+          <a class="btn" href="{{ url_for('admin_registrations', status='VERIFIED') }}">Voir dans la liste complète</a>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table table-modern">
+            <thead>
+              <tr>
+                <th style="width:36px;"><input type="checkbox" id="checkAll"></th>
+                <th>Électeur</th>
+                <th>Zone</th>
+                <th>Quartier</th>
+                <th>Téléphone</th>
+                <th>N° électeur</th>
+                <th>Centre / Bureau</th>
+                <th style="width:90px;">Fiabilité</th>
+                <th style="width:120px;">Historique</th>
+                <th>Superviseur</th>
+                <th>Vérifié le</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in pending %}
+                <tr>
+                  <td><input type="checkbox" name="reg_ids" value="{{ r.id }}"></td>
+                  <td><span class="lastname">{{ (r.nom or '')|upper }}</span> <span class="firstname">{{ r.prenoms }}</span></td>
+                  <td class="muted">{{ r.zone_id }}</td>
+                  <td>{{ r.quartier }}</td>
+                  <td>{{ r.telephone if r.telephone else '—' }}</td>
+                  <td class="mono">{{ r.voter_number if r.voter_number else '—' }}</td>
+                  <td>{{ r.polling_center if r.polling_center else '—' }} / {{ r.polling_station if r.polling_station else '—' }}</td>
+                  <td>
+                    {% set score = r.reliability_score or 0 %}
+                    <span class="badge {% if score >= 85 %}ok{% elif score >= 60 %}warn{% else %}danger{% endif %}">{{ score }}%</span>
+                  </td>
+                  <td><a class="btn secondary" href="{{ url_for('admin_registration_history', reg_id=r.id) }}">Historique</a></td>
+                  <td class="muted">{{ r.verified_by if r.verified_by else '—' }}</td>
+                  <td class="mono">{{ (r.verified_at[:19].replace('T',' ') if r.verified_at else '—') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </form>
+
+      <script>
+        const all = document.getElementById('checkAll');
+        all?.addEventListener('change', () => {
+          document.querySelectorAll('input[name="reg_ids"]').forEach(cb => cb.checked = all.checked);
+        });
+      </script>
+    {% else %}
+      <div class="hint">Aucun dossier à approuver. Si ça continue, on va devoir féliciter quelqu’un.</div>
+    {% endif %}
+  </div>
+{% endblock %}

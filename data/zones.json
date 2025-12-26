@@ -1,0 +1,77 @@
+[
+  {
+    "id": "3c5e4599-661b-48e4-8f13-4cd803311c5a",
+    "name": "Adiaho",
+    "active": true
+  },
+  {
+    "id": "97339127-b742-4058-afc7-6a06348c55ec",
+    "name": "Kodjoboue",
+    "active": true
+  },
+  {
+    "id": "89b70b03-6921-4449-898d-3db016a7d9cb",
+    "name": "Résidentiel",
+    "active": true
+  },
+  {
+    "id": "385377b2-8ccf-4f01-b8f1-ffdf1d7c9122",
+    "name": "Samo est",
+    "active": false
+  },
+  {
+    "id": "3363c660-d342-48d0-8875-c16d4707c01b",
+    "name": "Samo ouest",
+    "active": false
+  },
+  {
+    "id": "0eb02739-9704-4a18-9e08-c5a9aa4be87b",
+    "name": "Begneri",
+    "active": true
+  },
+  {
+    "id": "738e039c-1fb7-446e-8819-ae4ef3adb3c9",
+    "name": "Koumassi",
+    "active": true
+  },
+  {
+    "id": "5e92248c-a553-4164-95e7-3f00147d1248",
+    "name": "Bronoukro",
+    "active": true
+  },
+  {
+    "id": "78dfa91d-2a75-4320-a7a3-49e8feaf30e6",
+    "name": "Yaou ancien quartier",
+    "active": false
+  },
+  {
+    "id": "7a6958b2-aaa4-4a83-ba38-5372fd7af3fa",
+    "name": "Yaou nouveau quarier",
+    "active": false
+  },
+  {
+    "id": "423c02ca-cc59-40be-8261-0f5a9f6e77f9",
+    "name": "Yaou Ekressinville",
+    "active": false
+  },
+  {
+    "id": "a039f2b6-fd80-4963-9c00-8ce9c2ccdad7",
+    "name": "Samo",
+    "active": true
+  },
+  {
+    "id": "24bc1eea-b9ed-49b2-b04e-de0d2f32569b",
+    "name": "Tchantcheve",
+    "active": true
+  },
+  {
+    "id": "a453107b-1b31-432c-b032-80ba94936197",
+    "name": "Yaou",
+    "active": true
+  },
+  {
+    "id": "63c84bba-51e2-4b38-853d-bc1c49650a7c",
+    "name": "Ekressienville",
+    "active": false
+  }
+]

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% set title = "Objectifs" %}
+{% block content %}
+  <h1>Objectifs par zone</h1>
+  <p class="muted">Définis un objectif de recensement par zone. Le tableau de bord calculera la progression.</p>
+
+  <div class="card">
+    <form class="form" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="grid" style="grid-template-columns: 260px 1fr; gap:14px; align-items:end; margin-bottom:10px;">
+        <div>
+          <label>Taux de participation moyen (%)</label>
+          <input type="number" min="0" max="100" step="0.1" name="avg_turnout_pct" value="{{ avg_turnout_pct|default(70) }}" style="max-width:180px;">
+          <div class="hint">Utilisé avec la population électorale pour calculer un objectif automatique.</div>
+        </div>
+        <div class="hint" style="margin:0;">
+          Formule auto : <strong>Population zone × (participation moyenne) × (pourcentage visé)</strong>.
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>Population</th>
+              <th>Total (hors brouillons)</th>
+              <th>% visé</th>
+              <th>Objectif</th>
+              <th>Progression</th>
+            </tr>
+          </thead>
+          <tbody>
+                        {% for r in rows %}
+              <tr>
+                <td><strong>{{ r.zone.name }}</strong></td>
+                <td>
+                  {{ "{:,}".format(r.get("pop", 0)).replace(",", " ") if r.get("pop", 0) else "—" }}
+                </td>
+                <td>{{ r.total }}</td>
+                <td style="width:160px;">
+                  <input type="number" min="0" max="100" step="0.1" name="desired_{{ r.zone.id }}" value="{{ r.desired_pct }}" style="width:120px;">
+                </td>
+                <td style="width:220px;">
+                  <input type="number" min="0" name="target_{{ r.zone.id }}" value="{{ r.target }}" style="width:140px;">
+                  <div class="muted" style="font-size:12px;margin-top:4px;">Suggéré : {{ "{:,}".format(r.get("suggested", 0)).replace(",", " ") if r.get("suggested", 0) else "—" }}</div>
+                </td>
+                <td>
+                  {% if r.target and r.target > 0 %}
+                    <span class="badge">{{ r.pct }}%</span>
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+            <hr class="sep" style="margin:18px 0;">
+
+      <h2 style="margin:0 0 6px;">Objectifs par agent / superviseur</h2>
+      <p class="muted" style="margin:0 0 12px;">
+        Agents : nombre de dossiers saisis (hors brouillons). Superviseurs : nombre de dossiers vérifiés.
+      </p>
+
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Rôle</th>
+              <th>Réalisé</th>
+              <th>Objectif</th>
+              <th>Progression</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in user_rows %}
+              <tr>
+                <td><strong>{{ it.user.display_name }}</strong><div class="muted" style="font-size:12px;">@{{ it.user.username }}</div></td>
+                <td>{{ "Agent" if it.role == "agent" else "Superviseur" }}</td>
+                <td>{{ it.done }}</td>
+                <td style="width:160px;">
+                  <input class="input" type="number" min="0" name="utarget_{{ it.user.id }}" value="{{ it.target }}" style="max-width:140px;">
+                </td>
+                <td style="min-width:220px;">
+                  <div class="progress">
+                    {% set pct = 100 if it.pct > 100 else it.pct %}
+                    <div class="bar" style="width: {{ pct }}%;"></div>
+                  </div>
+                  <div class="muted" style="font-size:12px;margin-top:4px;">{{ it.pct }}%</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn" type="submit" name="action" value="autofill">Remplir automatiquement</button>
+        <button class="btn primary" type="submit">Enregistrer</button>
+        <a class="btn" href="{{ url_for('admin_dashboard') }}">Retour</a>
+      </div>
+
+      <div class="hint">Note : un objectif à 0 signifie « pas d’objectif défini ».</div>
+    </form>
+  </div>
+{% endblock %}

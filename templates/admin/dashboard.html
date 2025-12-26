@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% set title = "Admin" %}
+{% block content %}
+  <h1>Tableau de bord — Admin</h1>
+
+  <div class="grid">
+    <div class="kpi"><div class="kpi-label">Agents</div><div class="kpi-value">{{ counts.agents }}</div></div>
+    <div class="kpi"><div class="kpi-label">Superviseurs</div><div class="kpi-value">{{ counts.supervisors }}</div></div>
+    <div class="kpi"><div class="kpi-label">Total dossiers</div><div class="kpi-value">{{ counts.registrations }}</div></div>
+    <div class="kpi"><div class="kpi-label">Brouillons</div><div class="kpi-value">{{ counts.draft }}</div></div>
+    <div class="kpi"><div class="kpi-label">En attente</div><div class="kpi-value">{{ counts.pending }}</div></div>
+    <div class="kpi"><div class="kpi-label">À corriger</div><div class="kpi-value">{{ counts.needs_correction }}</div></div>
+    <div class="kpi"><div class="kpi-label">Vérifiés</div><div class="kpi-value">{{ counts.verified }}</div></div>
+    <div class="kpi"><div class="kpi-label">Approuvés</div><div class="kpi-value">{{ counts.approved }}</div></div>
+    <div class="kpi"><div class="kpi-label">Rejetés</div><div class="kpi-value">{{ counts.rejected }}</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Actions rapides</h2>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('admin_registrations') }}">Personnes recensées</a>
+      <a class="btn" href="{{ url_for('admin_approvals') }}">Approbations</a>
+      <a class="btn" href="{{ url_for('admin_payroll') }}">Paie</a>
+      <a class="btn" href="{{ url_for('admin_sms') }}">SMS</a>
+      <a class="btn" href="{{ url_for('admin_centers') }}">Centres</a>
+      <a class="btn" href="{{ url_for('admin_objectives') }}">Objectifs</a>
+      <a class="btn" href="{{ url_for('admin_audit') }}">Audit</a>
+      <a class="btn" href="{{ url_for('admin_backup') }}">Sauvegarder</a>
+    </div>
+    <p class="muted">Rappel : les données sont stockées dans <code>data/</code> (JSON). La sauvegarde te fait gagner des cheveux… donc fais-la.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Progression par zone</h2>
+      {% if zone_rows %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Zone</th>
+                <th>Total (hors brouillons)</th>
+                <th>Objectif</th>
+                <th>Progression</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for r in zone_rows %}
+              <tr>
+                <td><strong>{{ r.zone.name }}</strong></td>
+                <td>{{ r.total }}</td>
+                <td>{{ r.target if r.target else '—' }}</td>
+                <td>
+                  {% if r.target and r.target > 0 %}
+                    <span class="badge">{{ r.pct }}%</span>
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="hint">Aucune zone.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Performance des agents</h2>
+      {% if perf %}
+        <div class="table-wrap">
+          <table class="table table-modern">
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Zone</th>
+                <th>Total</th>
+                <th>En attente</th>
+                <th>À corriger</th>
+                <th>Vérifiés</th>
+                <th>Approuvés</th>
+                <th>Rejetés</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in perf %}
+                <tr>
+                  <td><strong>{{ p.agent.full_name }}</strong><div class="muted small">@{{ p.agent.username }}</div></td>
+                  <td>{{ p.zone }}</td>
+                  <td>{{ p.total }}</td>
+                  <td>{{ p.pending }}</td>
+                  <td>{{ p.needs_correction }}</td>
+                  <td>{{ p.verified }}</td>
+                  <td>{{ p.approved }}</td>
+                  <td>{{ p.rejected }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="hint">Aucun agent.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% set title = "Modifier" %}
+{% block content %}
+  <h1>Modifier un dossier</h1>
+
+  <div class="card narrow">
+    <div class="row-between">
+      <div>
+        <div class="muted">ID : <span class="mono">{{ reg.id }}</span></div>
+        <div class="muted">Statut : <span class="badge">{{ reg.status }}</span></div>
+      </div>
+      <a class="btn" href="{{ url_for('agent_dashboard') }}">Retour</a>
+    </div>
+
+    {% if reg.status == 'NEEDS_CORRECTION' %}
+      <div class="hint" style="border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08);">
+        <strong>À corriger :</strong> {{ reg.correction_reason if reg.correction_reason else "Le superviseur a demandé une correction." }}
+      </div>
+    {% endif %}
+
+    <form class="form" method="post" enctype="multipart/form-data" style="margin-top:12px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="grid2">
+        <div>
+          <label>Nom</label>
+          <input name="nom" required value="{{ reg.nom }}">
+        </div>
+        <div>
+          <label>Prénoms</label>
+          <input name="prenoms" required value="{{ reg.prenoms }}">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Date de naissance</label>
+          <input type="date" name="dob" required value="{{ reg.dob }}">
+        </div>
+        <div>
+          <label>Téléphone</label>
+          <input name="telephone" required value="{{ reg.telephone }}">
+        </div>
+      </div>
+
+      <label>Quartier</label>
+      <input name="quartier" required value="{{ reg.quartier }}">
+
+      <label>Ajouter une photo (optionnel)</label>
+      <input type="file" name="photo" accept="image/*,application/pdf">
+      {% if reg.photos and reg.photos|length > 0 %}
+        <div class="hint">Photos déjà attachées :
+          {% for p in reg.photos %}
+            <div><a href="{{ url_for('view_upload', filename=p) }}" target="_blank" class="mono">{{ p }}</a></div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <label>Notes (optionnel)</label>
+      <textarea name="notes" rows="3" placeholder="Infos utiles…">{{ reg.notes }}</textarea>
+
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn secondary" name="action" value="save_draft" type="submit">Enregistrer</button>
+        <button class="btn primary" name="action" value="submit" type="submit">Envoyer au superviseur</button>
+        <a class="btn" href="{{ url_for('agent_dashboard') }}">Annuler</a>
+      </div>
+
+      <div class="hint">Après l’envoi, le dossier n’est plus modifiable tant qu’il est en traitement.</div>
+    </form>
+  </div>
+
+<script>
+(function(){
+  const nom = document.querySelector('input[name="nom"]');
+  const prenoms = document.querySelector('input[name="prenoms"]');
+  const dob = document.querySelector('input[name="dob"]');
+  const warn = document.getElementById('dupWarn');
+  let timer = null;
+
+  function check(){
+    const n = (nom.value||"").trim();
+    const p = (prenoms.value||"").trim();
+    const d = (dob.value||"").trim();
+    if(n.length < 2 || p.length < 2 || d.length < 6){
+      warn.style.display = 'none';
+      return;
+    }
+    const url = "{{ url_for('agent_check_duplicates') }}" + `?nom=${encodeURIComponent(n)}&prenoms=${encodeURIComponent(p)}&dob=${encodeURIComponent(d)}&exclude_id={{ reg.id }}`;
+    fetch(url).then(r=>r.json()).then(j=>{
+      if(j.count && j.count > 0){
+        warn.textContent = `Doublon probable détecté: ${j.count} dossier(s).`;
+        warn.style.display = 'inline-block';
+      }else{
+        warn.style.display = 'none';
+      }
+    }).catch(()=>{});
+  }
+
+  [nom, prenoms, dob].forEach(el=>{
+    if(!el) return;
+    el.addEventListener('input', ()=>{
+      clearTimeout(timer);
+      timer = setTimeout(check, 450);
+    });
+  });
+})();
+</script>
+
+{% endblock %}

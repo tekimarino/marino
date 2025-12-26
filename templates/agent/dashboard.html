@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% set title = "Agent" %}
+{% block content %}
+  <h1>Tableau de bord — Agent</h1>
+  <p class="muted">Zone : <strong>{{ zone_name }}</strong></p>
+
+  <div class="grid">
+    <div class="kpi"><div class="kpi-label">Total</div><div class="kpi-value">{{ counts.total }}</div></div>
+    <div class="kpi"><div class="kpi-label">Brouillons</div><div class="kpi-value">{{ counts.draft }}</div></div>
+    <div class="kpi"><div class="kpi-label">À corriger</div><div class="kpi-value">{{ counts.needs_correction }}</div></div>
+    <div class="kpi"><div class="kpi-label">En attente</div><div class="kpi-value">{{ counts.pending }}</div></div>
+    <div class="kpi"><div class="kpi-label">Vérifiés</div><div class="kpi-value">{{ counts.verified }}</div></div>
+    <div class="kpi"><div class="kpi-label">Approuvés</div><div class="kpi-value">{{ counts.approved }}</div></div>
+    <div class="kpi"><div class="kpi-label">Rejetés</div><div class="kpi-value">{{ counts.rejected }}</div></div>
+  </div>
+
+  <div class="card">
+    <div class="row-between">
+      <h2>Paiements</h2>
+      <span class="badge">Tarif : {{ pay_rate_cfa }} F CFA / électeur</span>
+    </div>
+
+    <div class="tabs">
+      <a class="tab {% if pay_tab == 'upcoming' %}active{% endif %}" href="{{ url_for('agent_dashboard', page=pagination.page, pay_tab='upcoming') }}">
+        Paiements à venir <span class="tab-meta">{{ upcoming_total_fmt }}</span>
+      </a>
+      <a class="tab {% if pay_tab == 'paid' %}active{% endif %}" href="{{ url_for('agent_dashboard', page=pagination.page, pay_tab='paid') }}">
+        Paiements effectués <span class="tab-meta">{{ paid_total_fmt }}</span>
+      </a>
+    </div>
+
+    {% if pay_tab == 'paid' %}
+      {% if paid %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Période</th>
+                <th>Personnes</th>
+                <th>Montant</th>
+                <th>Payé le</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for r in paid %}
+              <tr>
+                <td>{{ r.label }}</td>
+                <td>{{ r.count }}</td>
+                <td>{{ r.amount_fmt }}</td>
+                <td class="mono">{{ r.paid_at[:19].replace('T',' ') if r.paid_at else "—" }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="hint">Aucun paiement n’a encore été marqué comme effectué.</div>
+      {% endif %}
+    {% else %}
+      <p class="muted">Total estimé (non payé) : <strong>{{ upcoming_total_fmt }}</strong></p>
+      {% if upcoming %}
+        <div class="table-wrap">
+          <table class="table">
+          <thead>
+            <tr>
+              <th>Période</th>
+              <th>Personnes</th>
+              <th>Montant</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in upcoming %}
+            <tr>
+              <td>{{ r.label }}</td>
+              <td>{{ r.count }}</td>
+              <td>{{ r.amount_fmt }}</td>
+              <td>
+                {% if r.status == "PAID" %}
+                  <span class="badge ok">Payé</span>
+                {% elif r.status == "GENERATED" %}
+                  <span class="badge warn">Fiche générée</span>
+                {% elif r.status == "LOCKED" %}
+                  <span class="badge warn">Période verrouillée</span>
+                {% else %}
+                  <span class="badge warn">À générer</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+          </table>
+        </div>
+        <div class="hint">NB : la fiche est générée par l’admin (paiement toutes les 2 semaines). Tant que la fiche n’est pas générée, le montant reste une estimation.</div>
+      {% else %}
+        <div class="hint">Aucune saisie sur les dernières périodes — donc aucune paie à calculer.</div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="row-between">
+      <h2>Mes enregistrements</h2>
+      <div class="actions">
+        <a class="btn" href="{{ url_for('agent_new_registration') }}">+ Nouvel électeur</a>
+      </div>
+    </div>
+
+    {% if regs %}
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Nom & prénoms</th>
+              <th>Date de naissance</th>
+              <th>Quartier</th>
+              <th>Téléphone</th>
+              <th>Statut</th>
+              <th>Fiabilité</th>
+              <th>Numéro d’électeur</th>
+              <th>Centre</th>
+              <th>Bureau</th>
+              <th style="width:220px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in regs %}
+              <tr>
+                <td>
+                  <span class="lastname">{{ (r.nom or "")|upper }}</span>
+                  <span class="firstname">{{ r.prenoms }}</span>
+                  {% if r.photos and r.photos|length > 0 %}
+                    <span class="badge">📷</span>
+                  {% endif %}
+                </td>
+                <td>{{ r.dob }}</td>
+                <td>{{ r.quartier }}</td>
+                <td>{{ r.telephone if r.telephone else "—" }}</td>
+                <td>
+                  {% if r.status == "DRAFT" %}<span class="badge">Brouillon</span>{% endif %}
+                  {% if r.status == "NEEDS_CORRECTION" %}<span class="badge warn">À corriger</span>{% endif %}
+                  {% if r.status == "PENDING" %}<span class="badge warn">En attente</span>{% endif %}
+                  {% if r.status == "VERIFIED" %}<span class="badge ok">Vérifié</span>{% endif %}
+                  {% if r.status == "APPROVED" %}<span class="badge ok">Approuvé</span>{% endif %}
+                  {% if r.status == "REJECTED" %}<span class="badge danger">Rejeté</span>{% endif %}
+                </td>
+                <td>
+                  {% set sc = (r.reliability_score or 0) %}
+                  {% set miss = (r.reliability_missing or []) %}
+                  {% if sc >= 80 %}
+                    <span class="badge ok" title="OK{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                  {% elif sc >= 50 %}
+                    <span class="badge warn" title="À améliorer{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                  {% else %}
+                    <span class="badge danger" title="Faible{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                  {% endif %}
+                </td>
+                <td>{{ r.voter_number if r.voter_number else "—" }}</td>
+                <td>{{ r.polling_center if r.polling_center else "—" }}</td>
+                <td>{{ r.polling_station if r.polling_station else "—" }}</td>
+                <td>
+                  <div class="actions">
+                    {% if r.status in ["DRAFT", "NEEDS_CORRECTION"] %}
+                      <a class="btn secondary" href="{{ url_for('agent_edit_registration', reg_id=r.id) }}">Modifier</a>
+                    {% endif %}
+                    <a class="btn" href="{{ url_for('agent_registration_history', reg_id=r.id) }}">Historique</a>
+                  </div>
+                </td>
+              </tr>
+              {% if r.status == "NEEDS_CORRECTION" and r.correction_reason %}
+                <tr>
+                  <td colspan="10" class="muted"><strong>Correction demandée :</strong> {{ r.correction_reason }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <div class="pagination-left">
+          <span class="muted">Page <strong>{{ pagination.page }}</strong> / {{ pagination.total_pages }} • {{ pagination.total }} enregistrements</span>
+        </div>
+        <div class="pagination-right">
+          {% if pagination.has_prev %}
+            <a class="btn secondary" href="{{ url_for('agent_dashboard', page=pagination.prev_page, pay_tab=pay_tab) }}">← Précédent</a>
+          {% else %}
+            <span class="btn secondary disabled">← Précédent</span>
+          {% endif %}
+          {% if pagination.has_next %}
+            <a class="btn secondary" href="{{ url_for('agent_dashboard', page=pagination.next_page, pay_tab=pay_tab) }}">Suivant →</a>
+          {% else %}
+            <span class="btn secondary disabled">Suivant →</span>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">Aucun enregistrement pour l’instant. Clique sur <strong>+ Nouvel électeur</strong>.</p>
+    {% endif %}
+  </div>
+{% endblock %}

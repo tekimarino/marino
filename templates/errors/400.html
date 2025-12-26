@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% set title="Requête invalide" %}{% block content %}
+<div class="card">
+  <h1>400 — Requête invalide</h1>
+  <p>La requête n'a pas pu être traitée (token CSRF manquant/incorrect ou formulaire invalide).</p>
+  <a class="btn" href="{{ url_for('index') }}">Retour</a>
+</div>
+{% endblock %}

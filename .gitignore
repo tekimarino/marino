@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# --- Données & fichiers sensibles ---
+# Photos/justificatifs (souvent privés)
+uploads/
+
+# Sauvegardes (ZIP)
+backups/
+
+# Données opérationnelles (souvent sensibles)
+data/registrations.json
+data/users.json
+data/payroll.json
+data/audit_log.json
+data/approvals_queue.json
+data/sms_outbox.json
+data/sms_campaigns.json
+data/sms_logs.json
+data/sms_config.json
+
+# --- Référentiels/config utiles à versionner ---
+# (centres, zones, objectifs, réglages)
+!data/centers.json
+!data/zones.json
+!data/objectives.json
+!data/settings.json

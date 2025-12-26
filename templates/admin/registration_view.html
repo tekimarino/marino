@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% set title = "Dossier" %}
+{% block content %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 style="margin:0;">Dossier</h1>
+      <p class="muted" style="margin:6px 0 0 0;">
+        <a href="{{ url_for('admin_registrations') }}">← Retour à la liste</a>
+      </p>
+    </div>
+    <div>
+      {% set s = quality_score(reg) %}
+      <span class="badge {{ quality_class(s) }}" title="Score de fiabilité">Fiabilité: {{ s }}%</span>
+      <span class="badge" style="margin-left:6px;">{{ reg.status }}</span>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px;">
+    <div class="card">
+      <h3 style="margin-top:0;">Identité</h3>
+      <p style="margin:0;">
+        <strong>{{ (reg.nom or '')|upper }}</strong> {{ reg.prenoms }}<br>
+        <span class="muted">Naissance:</span> {{ format_date(reg.dob) }}<br>
+        <span class="muted">Téléphone:</span> {{ reg.telephone if reg.telephone else '—' }}<br>
+        <span class="muted">Quartier:</span> {{ reg.quartier }}
+      </p>
+      <hr>
+      <p style="margin:0;">
+        <span class="muted">Zone:</span> {{ zone_name(reg.zone_id) }}<br>
+        <span class="muted">N° électeur:</span> {{ reg.voter_number if reg.voter_number else '—' }}<br>
+        <span class="muted">Centre / BV:</span> {{ reg.polling_center if reg.polling_center else '—' }} / {{ reg.polling_station if reg.polling_station else '—' }}
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Suivi</h3>
+      <p style="margin:0;">
+        <span class="muted">Créé par:</span> {{ find_user(reg.created_by).full_name if find_user(reg.created_by) else '—' }}<br>
+        <span class="muted">Créé le:</span> {{ reg.created_at if reg.created_at else '—' }}<br>
+        <span class="muted">Superviseur:</span> {{ find_user(reg.verified_by).full_name if (reg.verified_by and find_user(reg.verified_by)) else '—' }}<br>
+        <span class="muted">Vérifié le:</span> {{ reg.verified_at if reg.verified_at else '—' }}
+      </p>
+      {% if reg.admin_approved_by or reg.admin_approved_at %}
+        <hr>
+        <p style="margin:0;">
+          <span class="muted">Approbation admin:</span> {{ reg.admin_approved_by if reg.admin_approved_by else '—' }}<br>
+          <span class="muted">Le:</span> {{ reg.admin_approved_at if reg.admin_approved_at else '—' }}
+        </p>
+      {% endif %}
+
+      {% if reg.photos and reg.photos|length > 0 %}
+        <hr>
+        <p style="margin:0;">
+          <span class="badge" title="Pièces jointes">📎 {{ reg.photos|length }} pièce(s)</span>
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3 style="margin-top:0;">Historique des modifications</h3>
+    {% if history %}
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Acteur</th>
+              <th>Action</th>
+              <th>Changements</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in history %}
+              <tr>
+                <td class="mono">{{ e.ts }}</td>
+                <td class="muted">{{ actor_label(e) }}</td>
+                <td><span class="badge">{{ e.action }}</span></td>
+                <td>
+                  {% if e.changes and e.changes|length > 0 %}
+                    <ul style="margin:0;padding-left:18px;">
+                      {% for c in e.changes %}
+                        <li><span class="mono">{{ c.field }}</span>: <span class="muted">{{ c.old if c.old is not none else '' }}</span> → <strong>{{ c.new if c.new is not none else '' }}</strong></li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <span class="muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="muted">{{ e.note if e.note else '—' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="hint">Aucune modification enregistrée pour ce dossier.</div>
+    {% endif %}
+  </div>
+{% endblock %}

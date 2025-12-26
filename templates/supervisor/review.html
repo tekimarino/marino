@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% set title = "Vérification" %}
+{% block content %}
+  {% set admin_locked = (reg.status in ['APPROVED','PAID','REJECTED']) or reg.admin_approved %}
+  <h1>Vérification — Superviseur</h1>
+
+  {% if admin_locked %}
+    <div class="card" style="border:1px solid #f3c87a;background:#fff7e6;margin-bottom:12px;">
+      <strong>Dossier verrouillé :</strong> l’admin a déjà pris une décision. Le superviseur peut consulter, mais ne peut plus modifier.
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="row-between">
+      <div>
+        <div class="muted">ID : <span class="mono">{{ reg.id }}</span></div>
+        <div class="muted">Zone : <strong>{{ reg.zone_id }}</strong></div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="{{ url_for('supervisor_registration_history', reg_id=reg.id) }}">Historique</a>
+        <a class="btn" href="{{ url_for('supervisor_dashboard') }}">Retour</a>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:12px;">
+      <div>
+        <div class="label">Nom & prénoms</div>
+        <div><span class="lastname">{{ (reg.nom or '')|upper }}</span> <span class="firstname">{{ reg.prenoms }}</span></div>
+      </div>
+      <div>
+        <div class="label">Date de naissance</div>
+        <div>{{ reg.dob }}</div>
+      </div>
+      <div>
+        <div class="label">Quartier</div>
+        <div>{{ reg.quartier }}</div>
+      </div>
+      <div>
+        <div class="label">Téléphone</div>
+        <div>{{ reg.telephone if reg.telephone else "—" }}</div>
+      </div>
+    </div>
+
+    {% if reg.photos and reg.photos|length > 0 %}
+      <div class="hint" style="margin-top:10px;">
+        <strong>Pièces jointes :</strong>
+        {% for p in reg.photos %}
+          <div><a class="mono" href="{{ url_for('view_upload', filename=p) }}" target="_blank">{{ p }}</a></div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <hr class="sep">
+
+    <form class="form" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="grid2">
+        <div>
+          <label>Numéro d’électeur</label>
+          <input name="voter_number" value="{{ reg.voter_number }}" placeholder="Ex: 2028-000123" {% if admin_locked %}disabled{% endif %}>
+          <div class="hint">Renseigné après vérification sur la liste électorale.</div>
+        </div>
+        <div>
+          <label>Statut actuel</label>
+          <div>
+            {% if reg.status == 'PENDING' %}<span class="badge warn">En attente</span>{% endif %}
+            {% if reg.status == 'NEEDS_CORRECTION' %}<span class="badge warn">À corriger</span>{% endif %}
+            {% if reg.status == 'VERIFIED' %}<span class="badge ok">Vérifié</span>{% endif %}
+            {% if reg.status == 'APPROVED' %}<span class="badge ok">Approuvé</span>{% endif %}
+            {% if reg.status == 'REJECTED' %}<span class="badge danger">Rejeté</span>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Centre de vote</label>
+          <input id="polling_center" name="polling_center" value="{{ reg.polling_center }}" list="centerList" placeholder="Choisis ou tape le centre" {% if admin_locked %}disabled{% endif %}>
+          <datalist id="centerList">
+            {% for c in centers %}
+              <option value="{{ c.name }}"></option>
+            {% endfor %}
+          </datalist>
+          <div class="hint">Le référentiel se gère dans l’admin (Centres).</div>
+        </div>
+        <div>
+          <label>Bureau de vote</label>
+          <input id="polling_station" name="polling_station" value="{{ reg.polling_station }}" list="stationList" placeholder="Ex: BV03" {% if admin_locked %}disabled{% endif %}>
+          <datalist id="stationList"></datalist>
+        </div>
+      </div>
+
+      <label>Notes (optionnel)</label>
+      <textarea name="notes" rows="3" placeholder="Remarques du superviseur…" {% if admin_locked %}disabled{% endif %}>{{ reg.notes }}</textarea>
+
+      <label>Motif (si « À corriger »)</label>
+      <textarea name="correction_reason" rows="2" placeholder="Explique clairement la correction attendue…" {% if admin_locked %}disabled{% endif %}>{{ reg.correction_reason }}</textarea>
+
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn primary" name="action" value="verify" type="submit" {% if admin_locked %}disabled{% endif %}>Valider</button>
+        <button class="btn secondary" name="action" value="needs_correction" type="submit" {% if admin_locked %}disabled{% endif %}>À corriger</button>
+        <button class="btn danger" name="action" value="reject" type="submit" onclick="return confirm('Confirmer le rejet ?')" {% if admin_locked %}disabled{% endif %}>Rejeter</button>
+        <a class="btn" href="{{ url_for('supervisor_dashboard') }}">Annuler</a>
+      </div>
+
+      <div class="hint">Le dossier est verrouillé côté agent dès qu’il est validé/rejeté. Pour correction, utilise « À corriger ».</div>
+    </form>
+  </div>
+
+  <script>
+    const centers = {{ centers|tojson }};
+    const centerInput = document.getElementById('polling_center');
+    const stationList = document.getElementById('stationList');
+
+    function refreshStations(){
+      const name = (centerInput.value || '').trim();
+      stationList.innerHTML = '';
+      const c = centers.find(x => x.name === name);
+      if(c && c.bureaux){
+        c.bureaux.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b;
+          stationList.appendChild(opt);
+        });
+      }
+    }
+
+    centerInput.addEventListener('change', refreshStations);
+    centerInput.addEventListener('blur', refreshStations);
+    refreshStations();
+  </script>
+{% endblock %}

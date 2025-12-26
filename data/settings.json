@@ -1,0 +1,14 @@
+{
+  "double_approval": true,
+  "pay_rate": 500,
+  "pay_period_days": 14,
+  "campaign_start_date": "2025-12-23",
+  "campaign_end_date": "2027-12-23",
+  "pilotage_inactivity_hours": 6,
+  "pilotage_spike_window_minutes": 60,
+  "pilotage_spike_multiplier": 3.0,
+  "pilotage_spike_min_abs": 10,
+  "pilotage_behind_slack_pct": 10,
+  "pay_fixed_bonus": 10000,
+  "avg_turnout_pct": 40.0
+}

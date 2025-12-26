@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% set title = "Superviseur" %}
+{% block content %}
+  <h1>Tableau de bord — Superviseur</h1>
+  <p class="muted">Zone : <strong>{{ zone_name }}</strong></p>
+
+  <div class="grid">
+    <div class="kpi"><div class="kpi-label">Total</div><div class="kpi-value">{{ counts.total }}</div></div>
+    <div class="kpi"><div class="kpi-label">En attente</div><div class="kpi-value">{{ counts.pending }}</div></div>
+    <div class="kpi"><div class="kpi-label">À corriger</div><div class="kpi-value">{{ counts.needs }}</div></div>
+    <div class="kpi"><div class="kpi-label">Vérifiés</div><div class="kpi-value">{{ counts.verified }}</div></div>
+    <div class="kpi"><div class="kpi-label">Approuvés</div><div class="kpi-value">{{ counts.approved }}</div></div>
+    <div class="kpi"><div class="kpi-label">Rejetés</div><div class="kpi-value">{{ counts.rejected }}</div></div>
+  </div>
+
+  <div class="card">
+    <div class="row-between">
+      <h2>Dossiers en attente ({{ counts.pending }})</h2>
+      <span class="muted small">Tri : du plus récent au plus ancien</span>
+    </div>
+
+    {% if pending %}
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Électeur</th>
+              <th>Né(e)</th>
+              <th>Quartier</th>
+              <th>Téléphone</th>
+              <th>Fiabilité</th>
+              <th>Agent</th>
+              <th>Créé le</th>
+              <th style="width:240px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in pending %}
+            <tr>
+              <td><span class="lastname">{{ (r.nom or '')|upper }}</span> <span class="firstname">{{ r.prenoms }}</span></td>
+              <td>{{ r.dob }}</td>
+              <td>{{ r.quartier }}</td>
+              <td>{{ r.telephone if r.telephone else '—' }}</td>
+              <td>
+                {% set sc = (r.reliability_score or 0) %}
+                {% set miss = (r.reliability_missing or []) %}
+                {% if sc >= 80 %}
+                  <span class="badge ok" title="OK{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                {% elif sc >= 50 %}
+                  <span class="badge warn" title="À améliorer{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                {% else %}
+                  <span class="badge danger" title="Faible{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                {% endif %}
+              </td>
+              <td class="muted">{{ (find_user(r.created_by).full_name if find_user(r.created_by) else '—') }}</td>
+              <td class="mono">{{ (r.created_at[:19].replace('T',' ') if r.created_at else '—') }}</td>
+              <td><div class="actions"><a class="btn primary" href="{{ url_for('supervisor_review', reg_id=r.id) }}">Vérifier</a><a class="btn" href="{{ url_for('supervisor_registration_history', reg_id=r.id) }}">Historique</a></div></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="hint">Conseil : si un dossier est incomplet ou douteux, utilise <strong>À corriger</strong> (avec motif) plutôt que Rejet.</div>
+    {% else %}
+      <div class="hint">Rien à valider pour l’instant. Tes agents bossent… ou ils dorment. (Va jeter un œil aux dossiers <strong>Approuvés</strong> plus bas si tu cherches un historique.)</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="row-between">
+      <h2>Dossiers à corriger ({{ counts.needs }})</h2>
+      <span class="muted small">Tri : du plus récent au plus ancien</span>
+    </div>
+
+    {% if needs %}
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Électeur</th>
+              <th>Né(e)</th>
+              <th>Quartier</th>
+              <th>Téléphone</th>
+              <th>Fiabilité</th>
+              <th>Agent</th>
+              <th>Mis à jour</th>
+              <th style="width:240px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in needs %}
+            <tr>
+              <td><span class="lastname">{{ (r.nom or '')|upper }}</span> <span class="firstname">{{ r.prenoms }}</span></td>
+              <td>{{ r.dob }}</td>
+              <td>{{ r.quartier }}</td>
+              <td>{{ r.telephone if r.telephone else '—' }}</td>
+              <td>
+                {% set sc = (r.reliability_score or 0) %}
+                {% set miss = (r.reliability_missing or []) %}
+                {% if sc >= 80 %}
+                  <span class="badge ok" title="OK{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                {% elif sc >= 50 %}
+                  <span class="badge warn" title="À améliorer{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                {% else %}
+                  <span class="badge danger" title="Faible{% if miss|length>0 %} • Manque: {{ miss|join(', ') }}{% endif %}">{{ sc }}%</span>
+                {% endif %}
+              </td>
+              <td class="muted">{{ (find_user(r.created_by).full_name if find_user(r.created_by) else '—') }}</td>
+              <td class="mono">{{ ((r.updated_at or r.created_at)[:19].replace('T',' ') if (r.updated_at or r.created_at) else '—') }}</td>
+              <td>
+                <div class="actions">
+                  <a class="btn" href="{{ url_for('supervisor_review', reg_id=r.id) }}">Ouvrir</a>
+                  <a class="btn" href="{{ url_for('supervisor_registration_history', reg_id=r.id) }}">Historique</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="hint">Aucun dossier « à corriger » dans ta zone.</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="row-between">
+      <h2>Dossiers approuvés ({{ counts.approved }})</h2>
+      <span class="muted small">Tri : par date d’approbation</span>
+    </div>
+
+    {% if approved %}
+      <div class="table-wrap">
+        <table class="table table-modern">
+          <thead>
+            <tr>
+              <th>Électeur</th>
+              <th>Né(e)</th>
+              <th>Centre</th>
+              <th>Bureau</th>
+              <th>Fiabilité</th>
+              <th>Approuvé le</th>
+              <th style="width:220px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in approved %}
+            <tr>
+              <td><span class="lastname">{{ (r.nom or '')|upper }}</span> <span class="firstname">{{ r.prenoms }}</span></td>
+              <td>{{ r.dob }}</td>
+              <td>{{ r.polling_center if r.polling_center else '—' }}</td>
+              <td>{{ r.polling_station if r.polling_station else '—' }}</td>
+              <td>
+                {% set sc = (r.reliability_score or 0) %}
+                {% if sc >= 80 %}<span class="badge ok">{{ sc }}%</span>
+                {% elif sc >= 50 %}<span class="badge warn">{{ sc }}%</span>
+                {% else %}<span class="badge danger">{{ sc }}%</span>
+                {% endif %}
+              </td>
+              <td class="mono">{{ ((r.approved_at or r.admin_approved_at)[:19].replace('T',' ') if (r.approved_at or r.admin_approved_at) else '—') }}</td>
+              <td>
+                <div class="actions">
+                  <a class="btn" href="{{ url_for('supervisor_registration_history', reg_id=r.id) }}">Historique</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="hint">Aucun dossier approuvé pour l’instant.</div>
+    {% endif %}
+  </div>
+{% endblock %}
