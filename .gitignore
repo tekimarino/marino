@@ -36,3 +36,4 @@ data/sms_config.json
 !data/zones.json
 !data/objectives.json
 !data/settings.json
+do-ca.crt
